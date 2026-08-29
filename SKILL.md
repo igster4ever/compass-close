@@ -99,14 +99,21 @@ Map responses:
 - **"1"** / **"1,3"** etc. → toggle those entries (flip BOOST→SKIP or SKIP→BOOST), then apply
 - **N** → skip all silently
 
-Collect every entry the user confirmed as BOOST (after applying any toggles) into one array, then make a single call:
+**Do not flush yet.** Add every entry the user confirmed as BOOST (after applying any
+toggles) to a `pending_boosts` list held for the rest of this close — mirroring
+`pending_zone_assignments`'s accumulate-then-flush pattern (Step 4.4). Step 5/6's
+DECAY-review boost sub-flow may add more entries to the same list. Flush the whole list
+in **one** `boost-learnings-batch` call right before Step 6's `close` — same point where
+`pending_zone_assignments` is flushed (2026-08-28 audit finding #3: two separate
+close-time boost paths were each flushing immediately on their own, where the zone
+pattern would have collapsed both into one call):
 
 ```bash
 python3 ~/.claude/skills/compass/scripts/compass.py boost-learnings-batch <namespace> \
   '{"texts": ["<exact learning text 1>", "<exact learning text 2>", ...]}'
 ```
 
-If the confirmed BOOST list is empty (user chose N, or toggled every candidate to SKIP), skip this call entirely — do not call `boost-learnings-batch` with an empty `texts` array.
+Skip this call entirely if `pending_boosts` ends up empty.
 
 **Step 2b.0 — Artefact capture offer (P41)** — unchanged from parent SKILL.md's prior
 Step 2b.0. Run after boost check, before code context. Trigger conditions, prompt, and
@@ -280,8 +287,9 @@ For **hypothesis** learnings, additionally ask confidence (high/medium/low) and 
 window (N days).
 
 **Boosting prior learnings (P4):** if this session's work reconfirmed a *prior*
-learning, `boost-learning` on it directly (or fold it into Step 2.1's batch if not
-already flushed).
+learning, add it to the same `pending_boosts` list Step 2.1 started — never call
+`boost-learning` directly here. It flushes once, in one `boost-learnings-batch` call,
+right before Step 6's `close`.
 
 **4.5 — Cross-namespace learning conflicts (P2.1)** — **mandatory**, must run before
 the close payload is built:
@@ -426,8 +434,13 @@ non-empty, work happened but was never tracked:
 ⚠ No completed todos, but your note describes work.
 Derive a reality update from it? [Y/n]
 ```
-**Y**/enter → extract 1–3 bullets describing what now exists and works; include in
-the close payload's `reality` field. **N** → skip; state this explicitly at the end.
+**Y**/enter → extract 1–3 bullets describing what now exists and works. These are pure
+additions — prefer one `append-reality-bullet <namespace> "## What exists and works"
+"<bullet text>"` call per bullet (2026-08-28 audit finding #4) over the close payload's
+`reality` field, which requires reconstructing the whole document. Reserve the
+`reality` field / `update-reality` for cases that also reword existing bullets or
+restructure sections. **N** → skip; state this explicitly at
+the end.
 
 **Auto-distil:** from completed todos, git log, and any user note, distil **one**
 durable learning automatically — do not present it for approval unless the note
@@ -469,6 +482,9 @@ completed, `defer-opportunity` for each.
 **Flush pending zone assignments** (Step 4.4) via `set-learning-zones-batch` now, if
 the list is non-empty and hasn't been flushed yet.
 
+**Flush pending boosts** (Step 2.1 + Step 4.4) via `boost-learnings-batch` now, if
+`pending_boosts` is non-empty and hasn't been flushed yet.
+
 **Reality and close:**
 
 `cmd_close`'s payload `reality` field has exactly one no-op case: an empty string.
@@ -476,9 +492,22 @@ Any non-empty value unconditionally overwrites `reality.md`, even if `update-rea
 was already called separately this close. If reality was already written via a prior
 `update-reality` call, the `close` payload's `reality` field **must** be `""`.
 
-If reality changed, write it via the script — never write reality.md directly. Pass
-the content by writing it to a file first and reading the file back into the call,
-never via inline `$(...)` shell substitution:
+**Prefer the single-bullet primitives when the change is a pure add or remove**
+(2026-08-28 audit finding #4 — `update-reality` reads the whole document out,
+requires reconstructing it in full, and writes it all back, so its cost scales with
+total reality.md size, not the size of the actual edit):
+```bash
+python3 ~/.claude/skills/compass/scripts/compass.py append-reality-bullet <namespace> '<section_header>' '<bullet text>'
+python3 ~/.claude/skills/compass/scripts/compass.py remove-reality-bullet <namespace> '<bullet_hash>'
+```
+One call per bullet — a "move" (e.g. a Backlog item shipping) is one `remove` plus one
+`append`. Use `update-reality` only when a change also reworks existing bullets' wording
+in place or restructures sections (e.g. a corpus distillation pass) — the reword-drift
+carryover logic only runs on that full-document path.
+
+If a full rewrite is genuinely needed, write it via the script — never write
+reality.md directly. Pass the content by writing it to a file first and reading the
+file back into the call, never via inline `$(...)` shell substitution:
 ```bash
 python3 ~/.claude/skills/compass/scripts/compass.py update-reality <namespace> '<new_reality_text>'
 ```
