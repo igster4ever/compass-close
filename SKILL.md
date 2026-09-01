@@ -9,6 +9,18 @@ only** — deep close and multi-namespace close still run inline in the parent
 sections) until Phases 2–3 of the design doc extract them too. Do not route those
 paths here.
 
+**v1 consolidation (2026-09-01, `docs/2026-08-31-consolidate-open-close-prompts-plan.md`
+in the `compass` skill):** the boost check (old Step 2.1), goal completion status (old
+Step 4.1), goal-to-learning mapping (old Step 4.2), tag suggestions (old Step 4.3), and
+learning type/zone classification (old Step 4.4) are now one combined screen — **Step 4**
+— since none of the four has a hard sequential dependency on another. Step 5's existing
+checklist (already collapsed by the 2026-08-27 close-overhead audit) stays a separate
+screen right after it, since its eligibility genuinely depends on Step 4's outputs
+(completed goals, distilled learnings) and can't render before they exist. The artefact
+capture offer (old "Step 2b.0", embedded in old Step 2.1's text) now has its own home at
+Step 2.1. v2 (per-item confidence-gated auto-apply using P59 override history) is scoped
+in the same plan doc but not built — see the Strategic backlog.
+
 **Inputs (from invocation context):**
 - `namespace` — the compass namespace closing
 - current todo list state (inherited session context — no marshalling needed)
@@ -66,57 +78,11 @@ If `note` is empty AND the todo list shows no completed items, prompt once: "Not
 
 ---
 
-## Step 2.1 — Prior learning boost check (R5)
+## Step 2.1 — Artefact capture offer (P41)
 
-Run silently with the session context (note + completed items joined):
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py suggest-boosts <namespace> \
-  '{"context": "<note> <completed items joined by space>", "min_overlap": 2, "max_results": 3}'
-```
-
-If `candidates` is **empty**: skip silently — no prompt, no output.
-
-If `candidates` is **non-empty**, assess each candidate against the session's completed work
-before surfacing. For each, decide: **boost** (session directly reinforced or depended on this
-learning) or **skip** (overlap is incidental — keyword match without real relevance). Assign
-a one-clause rationale to each.
-
-Surface compactly (this is a 5-second step, not a gate):
-
-```
-↑ Prior learnings still in play — boost weight?
-  1. [BOOST] "<learning text, first 90 chars>" [w:<weight>]
-             → <one-clause rationale, e.g. "P33 implementation confirmed this design decision">
-  2. [SKIP]  "<learning text, first 90 chars>" [w:<weight>]
-             → <one-clause rationale, e.g. "keyword overlap only — not directly touched this session">
-  3. ...
-
-Confirm boosts, override skips, or adjust? (Y to accept · numbers to toggle · N to skip all)
-```
-
-Map responses:
-- **Y** / enter → apply the pre-assessed recommendations as-is (boost the [BOOST] entries, skip the rest)
-- **"1"** / **"1,3"** etc. → toggle those entries (flip BOOST→SKIP or SKIP→BOOST), then apply
-- **N** → skip all silently
-
-**Do not flush yet.** Add every entry the user confirmed as BOOST (after applying any
-toggles) to a `pending_boosts` list held for the rest of this close — mirroring
-`pending_zone_assignments`'s accumulate-then-flush pattern (Step 4.4). Step 5/6's
-DECAY-review boost sub-flow may add more entries to the same list. Flush the whole list
-in **one** `boost-learnings-batch` call right before Step 6's `close` — same point where
-`pending_zone_assignments` is flushed (2026-08-28 audit finding #3: two separate
-close-time boost paths were each flushing immediately on their own, where the zone
-pattern would have collapsed both into one call):
-
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py boost-learnings-batch <namespace> \
-  '{"texts": ["<exact learning text 1>", "<exact learning text 2>", ...]}'
-```
-
-Skip this call entirely if `pending_boosts` ends up empty.
-
-**Step 2b.0 — Artefact capture offer (P41)** — unchanged from parent SKILL.md's prior
-Step 2b.0. Run after boost check, before code context. Trigger conditions, prompt, and
+Unchanged from the parent SKILL.md's prior "Step 2b.0" — moved here (2026-09-01) so it
+has its own step now that the boost check it used to sit inside has moved to Step 4.
+Run after the compact summary, before code context. Trigger conditions, prompt, and
 `save-artefact` call are identical to the parent's previous fast-close Step 2b.0 — see
 `~/.claude/skills/compass/scripts/prompts/compass-commands.md` if you need the full text
 restated; otherwise this is rare enough to keep inline knowledge of from prior sessions.
@@ -170,33 +136,108 @@ offer to create it:
 
 ---
 
-## Step 4 — Goal-to-learning mapping (P0.2) + completion tracking (P0.3) + intent (P1.2)
+## Step 4 — Consolidated close batch (v1 consolidation, 2026-09-01)
 
-If session is open (has `planned_actions` from Step 1's `close-context` output):
+If session is open (has `planned_actions` from Step 1's `close-context` output), build
+one combined screen covering the boost check (R5), goal completion status (P0.3), and
+the per-learning goal-mapping (P0.2) / tag suggestions (P4.1) / type-and-zone
+classification (P6, P1.1, P56) — none of these four families has a hard sequential
+dependency on another, so they render together instead of as four separate gates.
 
-**4.1 — Goal completion status** (P0.3):
+**4.0 — Compute every default silently first:**
+
+- **Boost candidates** (R5) — unchanged from the old Step 2.1: run `suggest-boosts` with
+  the session context (note + completed items joined, `min_overlap: 2`, `max_results: 3`);
+  if `candidates` is empty, this family contributes nothing to the screen. For each
+  candidate, assess **boost** (session directly reinforced or depended on it) vs. **skip**
+  (incidental keyword overlap) with a one-clause rationale — same judgment as before, just
+  rendered here instead of its own screen.
+- **Goal completion defaults** (P0.3 + P-GC4) — for each planned goal, check the todo list
+  state and scan reality.md's most recent 'What exists and works' additions plus this
+  session's git commits for shipping evidence (same cross-check the old flow ran *before*
+  asking). If the todo item is marked done, or shipping evidence exists → default:
+  **Completed**, citing the evidence. Otherwise there is no confident default — mark that
+  item `(needs input)`; it is excluded from the bulk-accept shortcut and always needs an
+  explicit letter, even when every other item is accepted via Enter.
+- **Per-learning line** (P0.2 + P4.1 + P6/P1.1/P56) — for each learning distilled this
+  session, combine three already-existing inference passes into one line instead of three
+  separate ones: goal-origin (batch-inferred, P52, unchanged), suggested tags
+  (`suggest-tags`, unchanged), and type + zone (use `inferred_zone` from `log-learning`'s
+  response if present, else default type `fact` / zone `skip`).
+
+Render:
 ```
-Goal completion for this session:
+🗂 Close batch — <N> item(s):
 
-0. <first planned goal>
-   → completed / abandoned / blocked / evolved?
+  1. [BOOST] "<learning text, first 60 chars>" [w:<weight>] → boost? (default: yes — <rationale>)
+  2. [BOOST] "<learning text, first 60 chars>" [w:<weight>] → boost? (default: no — <rationale>)
+  3. [GOAL 0] "<goal text, first 60 chars>" → status? (default: completed — evidence: <commit/reality match>)
+  4. [GOAL 1] "<goal text, first 60 chars>" → status? (needs input — no evidence either way)
+  5. [LEARNING 1] "<learning text, first 60 chars>" → goal: 0 | tags: [tooling, process] | type: fact | zone: skip (default: accept)
+  6. [LEARNING 2] "<learning text, first 60 chars>" → goal: cross-goal | tags: [process] | type: procedural | zone: golden (default: accept)
+  ...
 
-1. <second planned goal>
-   → [status]
-...
+Accept all defaults, or override by number (e.g. "3n" / "4:blocked" / "5:zone=warning" / "6:tags=+debugging")?
+Item(s) marked "needs input" still need an explicit answer even on Enter.
 ```
 
-For each goal, ask user: **C**ompleted / **A**bandoned / **B**locked / **E**volved
+**Parsing:** a bare **Enter** (or "y"/"yes") accepts every item that has a default;
+`(needs input)` items always require their own token regardless. `<N><value>` overrides
+one item: a status letter (`n`, `C`, `A`, `B`, `E`) for BOOST/GOAL items; for LEARNING
+items, comma-separated `zone=<x>` / `type=<x>` / `tags=+<tag>` / `tags=-<tag>` /
+`goal=<n|none>` sub-overrides on the same item (e.g. `6:zone=warning,type=procedural`).
 
-Parse as single-letter per goal (e.g., "CCABEC") and store as `goal_statuses` array.
+**P-GC4 mismatch check on override:** if a GOAL item's override contradicts its
+evidence-based default (default was Completed on shipping evidence, override says
+Abandoned/Blocked), surface once per contradicted item before applying — this is the one
+case the batch does not silently apply, same real-judgment carve-out the old pre-prompt
+cross-check existed for:
+```
+Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]
+```
 
-**Cross-check before asking (P-GC4):** before prompting, scan reality.md's most recent
-'What exists and works' additions and this session's git commits for evidence each
-planned goal shipped. If a goal has shipping evidence but the user's answer contradicts
-it (e.g. marks abandoned), surface the mismatch once before recording: "Reality/git shows
-X shipped — still mark abandoned?"
+**Route each family's response exactly as its original step did:**
 
-**P14 — reason capture:** for each goal marked **B** (blocked) or **A** (abandoned), immediately follow up:
+- **BOOST** → do not flush yet. Add every entry confirmed BOOST (after any toggles) to a
+  `pending_boosts` list held for the rest of this close. Step 5/6's DECAY-review boost
+  sub-flow may add more entries to the same list. Flush the whole list in **one**
+  `boost-learnings-batch` call right before Step 6's `close` (2026-08-28 audit finding #3
+  — two separate close-time boost paths used to each flush immediately on their own,
+  where the zone pattern below would have collapsed both into one call):
+  ```bash
+  python3 ~/.claude/skills/compass/scripts/compass.py boost-learnings-batch <namespace> \
+    '{"texts": ["<exact learning text 1>", "<exact learning text 2>", ...]}'
+  ```
+  Skip this call entirely if `pending_boosts` ends up empty. **Boosting prior learnings
+  (P4):** if this session's work reconfirmed a *prior* learning, add it to this same list
+  too — never call `boost-learning` directly.
+
+- **GOAL** → parse into a `goal_statuses` array (e.g. `["completed", "blocked", ...]`).
+  For each goal marked **B**/**A**, immediately follow up (Step 4.1a below) for a reason
+  — that needs new user-supplied content, so it stays a real follow-up, not a bulk default.
+
+- **LEARNING** → apply goal_origin / tags / type / zone directly from the (possibly
+  overridden) line. **Rule:** do not build the close payload until every learning has a
+  `goal_origin` value. If the user confirms a zone for a learning already logged this
+  close (or a prior session's), do not call `set-learning-zone` immediately — accumulate
+  `{"text": ..., "zone": ...}` into a `pending_zone_assignments` list held for the rest of
+  this close (Step 5's checklist and Step 6 may both add more entries, e.g. a prior-session
+  learning confirmed via the DECAY sub-flow). Flush the whole list in **one** batched call
+  right before Step 6's `close`:
+  ```bash
+  python3 ~/.claude/skills/compass/scripts/compass.py set-learning-zones-batch <namespace> \
+    '[{"text": "<exact text 1>", "zone": "golden"}, {"text": "<exact text 2>", "zone": "warning"}]'
+  ```
+  This is finding #3 from the 2026-08-27 close-overhead audit — a shell loop over
+  individual `set-learning-zone` calls still forks one subprocess per call even when
+  batched into fewer *tool* calls; one script invocation for the whole close does not.
+  Skip the call entirely if `pending_zone_assignments` ends up empty. For **hypothesis**
+  type learnings, additionally ask confidence (high/medium/low) and test window (N days)
+  as an immediate follow-up — new content, same carve-out as the goal reason capture.
+
+### Step 4.1a — Reason capture for blocked/abandoned goals (P14)
+
+For each goal marked **B** (blocked) or **A** (abandoned) at Step 4, immediately follow up:
 ```
 Goal <N>: "<goal text>" → B (blocked)
   Brief reason? (or enter to skip)
@@ -207,7 +248,7 @@ Capture the response. Include in the close payload `incomplete` array as a dict:
 ```
 If the reason describes a deliberate reprioritization, offer to log it via `log-decision`.
 
-**4.1c — Verification contract scoring (P55):**
+### Step 4.1c — Verification contract scoring (P55)
 
 Check `goal_contracts` in the close-context output *(carried into this step's context
 from Step 1 — no second read needed)*. If no contracts exist for any completed goal,
@@ -226,73 +267,9 @@ Which were met? (comma-separated numbers, or "all" / "none")
 Capture response; call `verify-goal-contract` with `verified_criteria`/`unmet_criteria`.
 Surface: `✓ Contract score: <N>/<total> criteria verified.`
 
-**4.2 — Goal-to-learning mapping** (mandatory — sets `goal_origin` on each learning):
+### Step 4.5 — Cross-namespace learning conflicts (P2.1) — mandatory
 
-Batch-infer first (P52) — only fall back to a per-learning question when genuinely
-ambiguous. Present the full batch as one summary:
-```
-📎 Goal-to-learning mapping (inferred — correct any before I lock it in):
-  1. "<first 60 chars>" → goal 0
-  2. "<first 60 chars>" → goal 1,2
-  3. "<first 60 chars>" → cross-goal (none)
-  ...
-Correct? (Enter to accept all, or "2→0" / "3→none" style corrections)
-```
-Only ask a per-learning question when the inference is genuinely ambiguous.
-
-**Rule:** do not build the close payload until every learning has a `goal_origin` value.
-
-**4.3 — Multi-tagging with auto-suggest (P4.1)**:
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py suggest-tags <namespace> '{"text": "<learning text>"}'
-```
-Accept, extend, or override the suggestions.
-
-**4.4 — Learning classification (P6, P1.1, P56)** (mandatory):
-
-Ask for each learning, combined into a single question:
-```
-"<learning text>"
-  → fact / hypothesis / procedural?
-  → zone: golden (replicate) / warning (avoid) / preference (how I like to work) / skip?
-```
-
-- **fact** — observed and confirmed this session.
-- **hypothesis** — untested assumption; decays if unvalidated.
-- **procedural** — stable "how to do X correctly" knowledge; does not decay (P36).
-- **episodic** — a concrete this-session observation; decays after 60 days unless resurfaced (P44).
-
-Zone (P56) is optional and orthogonal to `learning_type`: **golden** (replicate) /
-**warning** (avoid) / **preference** (how the user likes to work) / **skip** (default).
-
-If the user skips, check the `log-learning` response for `inferred_zone` and mention
-it in passing — never re-prompt or apply it silently.
-
-**If the user confirms a zone for a learning already logged this close (or a prior
-session's), do not call `set-learning-zone` immediately.** Accumulate `{"text": ...,
-"zone": ...}` into a `pending_zone_assignments` list held for the rest of this close —
-Step 5's checklist and Step 6 both may add more entries to it (e.g. a prior-session
-learning confirmed via the DECAY sub-flow). Flush the whole list in **one** batched
-call right before Step 6's `close`:
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py set-learning-zones-batch <namespace> \
-  '[{"text": "<exact text 1>", "zone": "golden"}, {"text": "<exact text 2>", "zone": "warning"}]'
-```
-This is finding #3 from the 2026-08-27 close-overhead audit — a shell loop over
-individual `set-learning-zone` calls still forks one subprocess per call even when
-batched into fewer *tool* calls; one script invocation for the whole close does not.
-Skip the call entirely if `pending_zone_assignments` ends up empty.
-
-For **hypothesis** learnings, additionally ask confidence (high/medium/low) and test
-window (N days).
-
-**Boosting prior learnings (P4):** if this session's work reconfirmed a *prior*
-learning, add it to the same `pending_boosts` list Step 2.1 started — never call
-`boost-learning` directly here. It flushes once, in one `boost-learnings-batch` call,
-right before Step 6's `close`.
-
-**4.5 — Cross-namespace learning conflicts (P2.1)** — **mandatory**, must run before
-the close payload is built:
+Must run before the close payload is built:
 
 ```bash
 python3 ~/.claude/skills/compass/scripts/compass.py log-learnings-batch <namespace> \
@@ -336,8 +313,10 @@ Walk the returned `results` in order (matched by `text`):
   payload (`decision: "diverge"|"link"`) — it writes the entry itself. **Do not**
   call `log-learning` afterwards; it would re-raise the identical conflict.
 
-**4.6 — Intent change reason (P1.2)** (skip if drift was handled at ORIENT):
-If intent changed mid-session and no reason recorded yet, ask and call `set-intent`.
+### Step 4.6 — Intent change reason (P1.2)
+
+Skip if drift was handled at ORIENT. If intent changed mid-session and no reason
+recorded yet, ask and call `set-intent`.
 
 All three data types get stored: goal completion stats → trend; goal_origin →
 learning-to-goal mapping; hypothesis metadata → validation surfacing.
@@ -347,13 +326,15 @@ learning-to-goal mapping; hypothesis metadata → validation surfacing.
 ## Step 5 — Consolidated close checklist (finding #2 collapse)
 
 The 2026-08-27 close-overhead audit's finding #2: six advisory prompts — boost check
-(already handled at Step 2.1, which fires early because it's about *this session's*
-completed work, not the learnings just distilled) plus **CLAUDE.md reflection (P5.1),
-outcome-link offer (P49), cross-namespace propagation, skill-feedback (P52), and
-retrieval-stale decay review (P58)** — used to fire as five *separate* sequential
-Y/N gates at the tail of every close. All five now share **one** compute-then-render
-pass, so the common case (every goal completed, nothing contradictory, no friction to
-report) costs one screen instead of five round trips.
+(now handled at Step 4, which fires as soon as the session's completed work is known,
+before the learnings distilled there feed this step's own eligibility checks) plus
+**CLAUDE.md reflection (P5.1), outcome-link offer (P49), cross-namespace propagation,
+skill-feedback (P52), and retrieval-stale decay review (P58)** — used to fire as five
+*separate* sequential Y/N gates at the tail of every close. All five now share **one**
+compute-then-render pass, so the common case (every goal completed, nothing
+contradictory, no friction to report) costs one screen instead of five round trips. This
+screen still can't merge into Step 4's — its eligibility genuinely depends on Step 4's
+outputs (which goals completed, what got distilled), so it has to render after them.
 
 **Compute all five silently** (each reuses data already in hand — no full `read`):
 
@@ -362,7 +343,7 @@ report) costs one screen instead of five round trips.
   and this close's distilled learnings for `tooling`/`debugging`-tagged gotchas. **Skip
   entirely (no signal) if the user already manually updated CLAUDE.md this session**
   (visible in git diff or mentioned in the note) — do not propose duplicate changes.
-- **B — Outcome-link offer:** eligible if any goal was marked **C** at Step 4.1.
+- **B — Outcome-link offer:** eligible if any goal was marked **C** at Step 4.
   **Outcome links are same-namespace only** — never attempt to link a completed goal
   to a reality bullet in another namespace, even if the fragment superficially matches.
 - **C — Cross-namespace propagation:** eligible if any distilled learning carries a
@@ -448,7 +429,7 @@ contains something non-obvious that warrants a check.
 
 **History snapshot contract:** the close payload MUST include `completed` and
 `incomplete` arrays from the current todo list state. If the todo list is empty,
-derive `completed` from goals marked **C** at Step 4.1 instead.
+derive `completed` from goals marked **C** at Step 4 instead.
 
 **Learning decay (P2.2 + P-GC2 + P58):** if Step 5's DECAY item was accepted (or no
 checklist fired because DECAY was the only signal and defaulted through), present the
@@ -479,10 +460,10 @@ already fetched, no second call:
 **Deferred escalations (P1.3):** if any ORIENT escalation candidates weren't
 completed, `defer-opportunity` for each.
 
-**Flush pending zone assignments** (Step 4.4) via `set-learning-zones-batch` now, if
+**Flush pending zone assignments** (Step 4) via `set-learning-zones-batch` now, if
 the list is non-empty and hasn't been flushed yet.
 
-**Flush pending boosts** (Step 2.1 + Step 4.4) via `boost-learnings-batch` now, if
+**Flush pending boosts** (Step 4) via `boost-learnings-batch` now, if
 `pending_boosts` is non-empty and hasn't been flushed yet.
 
 **Reality and close:**
@@ -521,14 +502,27 @@ python3 ~/.claude/skills/compass/scripts/compass.py verify-reality <namespace> \
   '<JSON array of new_bullet_hashes for completed-todo-derived bullets>'
 ```
 
+**Prompt-count tally (2026-09-01, `docs/2026-08-31-consolidate-open-close-prompts-plan.md`
+in the `compass` skill):** count every distinct interactive screen actually presented
+across this sub-skill's Steps 2–5 (Step 4's batch counts as **one**, not one per family;
+Step 5's checklist counts as one whether or not it renders). Include this total as
+`close_prompt_count` in the payload below, alongside `open_prompt_count` carried forward
+from `compass-open`'s own tally (omit either key if it genuinely wasn't tracked this
+session — e.g. a deep-close or multi-namespace-close path that didn't go through
+`compass-open`'s Step 4.6 hand-off). Write-only this session — no script or trend reads
+these yet, see the Strategic backlog for the deferred read-side `avg_last_5`.
+
 Then close:
 ```bash
 python3 ~/.claude/skills/compass/scripts/compass.py close <namespace> '<payload_json>'
 ```
+`<payload_json>` includes `"open_prompt_count": <N>, "close_prompt_count": <M>` alongside
+the fields already documented above.
 
 The response includes `close_duration_seconds`/`close_command_count` when
 `mark-close-start` ran at Step 1 (it always does, in this sub-skill) — no action
-needed, this is what a future overhead audit reads instead of hand-tallying.
+needed, this is what a future overhead audit reads instead of hand-tallying. It also
+echoes `open_prompt_count`/`close_prompt_count` back when supplied.
 
 ---
 
