@@ -23,7 +23,9 @@ in the same plan doc but not built — see the Strategic backlog.
 
 **Inputs (from invocation context):**
 - `namespace` — the compass namespace closing
-- current todo list state (inherited session context — no marshalling needed)
+- current todo list state (inherited session context — no marshalling needed; falls
+  back to `state.json`'s `goal_progress` when this runtime has no TodoWrite-equivalent
+  tool, see Step 1)
 
 **Never call `compass.py close` directly as a shortcut.** Run Steps 1–6 in order.
 The `close` call is the final action of Step 6, not a replacement for the steps
@@ -54,7 +56,12 @@ orient context (finding #1). Hold all of these — they feed Step 4.1c (`goal_co
 Step 5 item B (`reality_validation`), Step 5 item D / Step 6 (the three decay lists,
 `corpus_summary_due`).
 
-Read the current todo list state.
+Read the current todo list state — this runtime's TodoWrite-equivalent tool if it has
+one, otherwise fall back to `close-context`'s `planned_actions` cross-referenced
+against `read`'s `goal_progress` array (2026-09-02 — a real session found `ToolSearch`
+returning nothing for TodoWrite at all; `goal_progress` is `open`'s host-independent
+substitute, updated via `set-goal-status` as goals complete mid-session, see
+compass-open's Step 4).
 
 ---
 
@@ -152,13 +159,15 @@ dependency on another, so they render together instead of as four separate gates
   candidate, assess **boost** (session directly reinforced or depended on it) vs. **skip**
   (incidental keyword overlap) with a one-clause rationale — same judgment as before, just
   rendered here instead of its own screen.
-- **Goal completion defaults** (P0.3 + P-GC4) — for each planned goal, check the todo list
-  state and scan reality.md's most recent 'What exists and works' additions plus this
-  session's git commits for shipping evidence (same cross-check the old flow ran *before*
-  asking). If the todo item is marked done, or shipping evidence exists → default:
-  **Completed**, citing the evidence. Otherwise there is no confident default — mark that
-  item `(needs input)`; it is excluded from the bulk-accept shortcut and always needs an
-  explicit letter, even when every other item is accepted via Enter.
+- **Goal completion defaults** (P0.3 + P-GC4) — for each planned goal, check the todo
+  list state (or `goal_progress[index]` on the fallback path — see Step 1) and scan
+  reality.md's most recent 'What exists and works' additions plus this session's git
+  commits for shipping evidence (same cross-check the old flow ran *before* asking).
+  If the todo item / `goal_progress` entry is marked done, or shipping evidence exists
+  → default: **Completed**, citing the evidence. Otherwise there is no confident
+  default — mark that item `(needs input)`; it is excluded from the bulk-accept
+  shortcut and always needs an explicit letter, even when every other item is
+  accepted via Enter.
 - **Per-learning line** (P0.2 + P4.1 + P6/P1.1/P56) — for each learning distilled this
   session, combine three already-existing inference passes into one line instead of three
   separate ones: goal-origin (batch-inferred, P52, unchanged), suggested tags
