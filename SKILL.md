@@ -495,6 +495,12 @@ python3 ~/.claude/skills/compass/scripts/compass.py update-reality <namespace> '
 If this trips the bullet-collapse guard on a genuinely intentional rewrite (a large,
 deliberate condensing of reality, not a broken substitution), re-run with `--force`.
 
+**Check the response's `advisory` field (2026-09-02).** If non-null, `update-reality`
+detected a pure addition (0 removed, 0 reworded) — exactly the shape
+`append-reality-bullet` exists for. Surface it plainly rather than silently ignoring
+it: `⚠ <advisory text>` — this is what makes the guidance above self-correcting instead
+of relying on memory alone.
+
 Auto-verify the subset of the response's `new_bullet_hashes` that correspond to
 bullets promoted to "What exists and works" this session:
 ```bash
