@@ -466,9 +466,6 @@ already fetched, no second call:
   theme, `approve-learning-decay` with `approved_ids`, `log-learning` with `weight: 3`
   per synthesis entry). Max once per 5 sessions per namespace.
 
-**Deferred escalations (P1.3):** if any ORIENT escalation candidates weren't
-completed, `defer-opportunity` for each.
-
 **Flush pending zone assignments** (Step 4) via `set-learning-zones-batch` now, if
 the list is non-empty and hasn't been flushed yet.
 
