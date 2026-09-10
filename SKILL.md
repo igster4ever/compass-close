@@ -492,6 +492,11 @@ One call per bullet — a "move" (e.g. a Backlog item shipping) is one `remove` 
 in place or restructures sections (e.g. a corpus distillation pass) — the reword-drift
 carryover logic only runs on that full-document path.
 
+*(Unlike most other compass write commands, `append-reality-bullet` takes two plain
+positional strings, not a JSON blob — `<section_header>` must be the exact rendered
+Markdown heading, e.g. `"### Tactical"`; a heading that doesn't exist returns
+`available_headers` rather than guessing.)*
+
 If a full rewrite is genuinely needed, write it via the script — never write
 reality.md directly. Pass the content by writing it to a file first and reading the
 file back into the call, never via inline `$(...)` shell substitution:
