@@ -366,25 +366,36 @@ outputs (which goals completed, what got distilled), so it has to render after t
   `get-skill-feedback <namespace>`, and if any `"status": "open"` entry's fix is
   already confirmed by this close's reality.md text, `action-skill-feedback` it
   silently before considering it for the checklist.
+- **F — Backlog match:** call `match-backlog <namespace> '{"context": "<note +
+  completed-items text>"}'`. Eligible if `candidates` is non-empty. This catches a
+  gap outcome-linking (item B) can't: B only checks goals *declared* at DECIDE, but a
+  Tactical/Strategic backlog item can also be resolved by ad-hoc work the user asked
+  for mid-session — never a formal goal — which B has no way to see. Without this
+  check, a resolved item (e.g. "blocked on X" after X clears) can sit stale across
+  sessions with nothing to surface it (real gap found 2026-09-15).
 
-**If none of A–E have signal:** skip this whole step — no output — proceed to Step 6.
+**If none of A–F have signal:** skip this whole step — no output — proceed to Step 6.
 
 **Otherwise**, render only the items with actual signal as one screen:
 
 ```
 🧾 Close checklist — <N> item(s):
 
-  1. [CLAUDE.md] <N> candidate update(s) detected → apply? (default: yes)
-  2. [OUTCOME]   <N> goal(s) completed → link to reality bullets? (default: yes)
-  3. [PROPAGATE] "<learning, condensed>" tagged `<tag>` → push to global? (default: yes)
-  4. [DECAY]     <N> decay/retrieval-stale candidate(s) → review for discard? (default: review)
-  5. [FEEDBACK]  any protocol friction to log? (default: no)
+  1. [CLAUDE.md]      <N> candidate update(s) detected → apply? (default: yes)
+  2. [OUTCOME]         <N> goal(s) completed → link to reality bullets? (default: yes)
+  3. [PROPAGATE]       "<learning, condensed>" tagged `<tag>` → push to global? (default: yes)
+  4. [DECAY]           <N> decay/retrieval-stale candidate(s) → review for discard? (default: review)
+  5. [FEEDBACK]        any protocol friction to log? (default: no)
+  6. [BACKLOG MATCH]   "<item text, condensed>" ([tactical|strategic]) looks resolved by
+                       this session's work → clear it? (default: yes)
 
 Accept all defaults, or override by number (e.g. "1n 5:felt slow at step 3")? [Enter to accept all]
 ```
 
 Number only the items actually rendered (skip letters with no signal — e.g. if only
-C and E have signal, show them as 1 and 2).
+C and E have signal, show them as 1 and 2). A `match-backlog` response can return more
+than one candidate — render each as its own numbered `[BACKLOG MATCH]` line rather than
+collapsing them, since each needs its own accept/decline.
 
 Map the response:
 - **Enter / "y" / "yes"** → apply every rendered item's default action.
@@ -410,6 +421,14 @@ gating decision, not the underlying mechanics or script calls:**
 - **FEEDBACK → Y (or inline text):** if no text was supplied inline, ask *"One
   sentence: what felt slow, broken, or missing?"* then the step_ref/failure-dimension
   follow-up exactly as before, then `log-skill-feedback`. Declined/no signal → skip.
+- **BACKLOG MATCH → Y (per candidate):** call `remove-reality-bullet <namespace>
+  '<bullet_hash>'` — the hash `match-backlog` returns is already the one
+  `_parse_reality_bullets` would compute, no re-derivation needed. This only removes
+  the stale backlog entry; it does not itself add a "what exists" bullet documenting
+  the resolution — if that's warranted, it's covered by Step 6's reality-rescue/
+  auto-distil pass below, not duplicated here. **N**/default-declined → skip that
+  candidate, leave the backlog item as-is (it may be a false-positive keyword match,
+  not an actual resolution — never remove without confirmation).
 
 **Rule:** one screen, one round trip for the fully-nominal case. Per-item drill-in
 only for items the user overrides or that inherently need free text.
