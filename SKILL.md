@@ -485,16 +485,6 @@ already fetched, no second call:
   theme, `approve-learning-decay` with `approved_ids`, `log-learning` with `weight: 3`
   per synthesis entry). Max once per 5 sessions per namespace.
 
-**Reality compaction (archiving cadence, docs/reality-compaction-cadence-design.md in
-the `compass` skill):** always call this — it checks its own due-ness internally and is
-a silent no-op most sessions:
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py run-reality-compaction <namespace>
-```
-If `archived > 0`, surface one line: `📦 Archived <N> long-verified bullet(s) to
-reality_archive.md.` If `archived: 0`, say nothing — this is not a cadence worth a
-prompt or an explanation when it doesn't fire.
-
 **Flush pending zone assignments** (Step 4) via `set-learning-zones-batch` now, if
 the list is non-empty and hasn't been flushed yet.
 
@@ -564,6 +554,19 @@ python3 ~/.claude/skills/compass/scripts/compass.py close <namespace> '<payload_
 ```
 `<payload_json>` includes `"open_prompt_count": <N>, "close_prompt_count": <M>` alongside
 the fields already documented above.
+
+**Reality compaction (archiving cadence, docs/reality-compaction-cadence-design.md in
+the `compass` skill):** always call this — it checks its own due-ness internally and is
+a silent no-op most sessions. Run this LAST, after `close` itself, since `close` is the
+last thing that can rewrite `reality.md` (the payload's `reality` field, `update-reality`,
+`verify-reality` all run earlier in this step) — running compaction any earlier risks a
+later full-document reality write restoring bullets compaction just archived:
+```bash
+python3 ~/.claude/skills/compass/scripts/compass.py run-reality-compaction <namespace>
+```
+If `archived > 0`, surface one line: `📦 Archived <N> long-verified bullet(s) to
+reality_archive.md.` If `archived: 0`, say nothing — this is not a cadence worth a
+prompt or an explanation when it doesn't fire.
 
 The response includes `close_duration_seconds`/`close_command_count` when
 `mark-close-start` ran at Step 1 (it always does, in this sub-skill) — no action
