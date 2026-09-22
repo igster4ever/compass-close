@@ -38,9 +38,9 @@ zone/decay decisions, and learnings.
 
 Run silently, in this order:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py mark-close-start <namespace>
-python3 ~/.claude/skills/compass/scripts/compass.py close-context <namespace>
-python3 ~/.claude/skills/compass/scripts/compass.py gitlog <namespace>
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py mark-close-start <namespace>
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py close-context <namespace>
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py gitlog <namespace>
 ```
 
 `mark-close-start` stamps `close_phase_started_at`/resets `close_phase_command_count` —
@@ -214,7 +214,7 @@ Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]
   — two separate close-time boost paths used to each flush immediately on their own,
   where the zone pattern below would have collapsed both into one call):
   ```bash
-  python3 ~/.claude/skills/compass/scripts/compass.py boost-learnings-batch <namespace> \
+  /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py boost-learnings-batch <namespace> \
     '{"texts": ["<exact learning text 1>", "<exact learning text 2>", ...]}'
   ```
   Skip this call entirely if `pending_boosts` ends up empty. **Boosting prior learnings
@@ -234,7 +234,7 @@ Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]
   learning confirmed via the DECAY sub-flow). Flush the whole list in **one** batched call
   right before Step 6's `close`:
   ```bash
-  python3 ~/.claude/skills/compass/scripts/compass.py set-learning-zones-batch <namespace> \
+  /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py set-learning-zones-batch <namespace> \
     '[{"text": "<exact text 1>", "zone": "golden"}, {"text": "<exact text 2>", "zone": "warning"}]'
   ```
   This is finding #3 from the 2026-08-27 close-overhead audit — a shell loop over
@@ -281,7 +281,7 @@ Surface: `✓ Contract score: <N>/<total> criteria verified.`
 Must run before the close payload is built:
 
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py log-learnings-batch <namespace> \
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py log-learnings-batch <namespace> \
   '[{"text": "<learning text 1>", "tags": [...], "reconcile": true},
     {"text": "<learning text 2>", "tags": [...], "reconcile": true}]'
 ```
@@ -503,8 +503,8 @@ was already called separately this close. If reality was already written via a p
 requires reconstructing it in full, and writes it all back, so its cost scales with
 total reality.md size, not the size of the actual edit):
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py append-reality-bullet <namespace> '<section_header>' '<bullet text>'
-python3 ~/.claude/skills/compass/scripts/compass.py remove-reality-bullet <namespace> '<bullet_hash>'
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py append-reality-bullet <namespace> '<section_header>' '<bullet text>'
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py remove-reality-bullet <namespace> '<bullet_hash>'
 ```
 One call per bullet — a "move" (e.g. a Backlog item shipping) is one `remove` plus one
 `append`. Use `update-reality` only when a change also reworks existing bullets' wording
@@ -520,7 +520,7 @@ If a full rewrite is genuinely needed, write it via the script — never write
 reality.md directly. Pass the content by writing it to a file first and reading the
 file back into the call, never via inline `$(...)` shell substitution:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py update-reality <namespace> '<new_reality_text>'
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py update-reality <namespace> '<new_reality_text>'
 ```
 If this trips the bullet-collapse guard on a genuinely intentional rewrite (a large,
 deliberate condensing of reality, not a broken substitution), re-run with `--force`.
@@ -534,7 +534,7 @@ of relying on memory alone.
 Auto-verify the subset of the response's `new_bullet_hashes` that correspond to
 bullets promoted to "What exists and works" this session:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py verify-reality <namespace> \
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py verify-reality <namespace> \
   '<JSON array of new_bullet_hashes for completed-todo-derived bullets>'
 ```
 
@@ -550,7 +550,7 @@ these yet, see the Strategic backlog for the deferred read-side `avg_last_5`.
 
 Then close:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py close <namespace> '<payload_json>'
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py close <namespace> '<payload_json>'
 ```
 `<payload_json>` includes `"open_prompt_count": <N>, "close_prompt_count": <M>` alongside
 the fields already documented above.
@@ -562,7 +562,7 @@ last thing that can rewrite `reality.md` (the payload's `reality` field, `update
 `verify-reality` all run earlier in this step) — running compaction any earlier risks a
 later full-document reality write restoring bullets compaction just archived:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py run-reality-compaction <namespace>
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py run-reality-compaction <namespace>
 ```
 If `archived > 0`, surface one line: `📦 Archived <N> long-verified bullet(s) to
 reality_archive.md.` If `archived: 0`, say nothing — this is not a cadence worth a
