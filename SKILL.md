@@ -444,8 +444,9 @@ non-empty, work happened but was never tracked:
 Derive a reality update from it? [Y/n]
 ```
 **Y**/enter → extract 1–3 bullets describing what now exists and works. These are pure
-additions — prefer one `append-reality-bullet <namespace> "## What exists and works"
-"<bullet text>"` call per bullet (2026-08-28 audit finding #4) over the close payload's
+additions — prefer `append-reality-bullet <namespace> "## What exists and works"
+"<bullet text>"` for a single bullet, or one `reality-bullets-batch` call for 2–3
+(2026-08-28 audit finding #4; batch primitive 2026-09-29) over the close payload's
 `reality` field, which requires reconstructing the whole document. Reserve the
 `reality` field / `update-reality` for cases that also reword existing bullets or
 restructure sections. **N** → skip; state this explicitly at
@@ -506,8 +507,23 @@ total reality.md size, not the size of the actual edit):
 /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py append-reality-bullet <namespace> '<section_header>' '<bullet text>'
 /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py remove-reality-bullet <namespace> '<bullet_hash>'
 ```
-One call per bullet — a "move" (e.g. a Backlog item shipping) is one `remove` plus one
-`append`. Use `update-reality` only when a change also reworks existing bullets' wording
+**Two or more edits in one close → one `reality-bullets-batch` call instead**
+(friction-review-2026-09-25 — one session made ~15 separate single-bullet calls):
+```bash
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py reality-bullets-batch <namespace> '[
+  {"op": "remove", "hash_or_text": "<bullet_hash or exact text>"},
+  {"op": "append", "section": "## What exists and works", "text": "<bullet text>"}
+]'
+```
+Ops apply in order, and the call is all-or-nothing: if any op fails, nothing is written
+and each op's `results` entry says why (`available_headers` / `current_reality_bullets`,
+same diagnostics as the single-bullet commands) — fix and resend the whole array. A
+"move" (e.g. a Backlog item shipping) is one `remove` plus one `append`; if the text is
+unchanged, batching it keeps the bullet's verification record (`pruned_hashes` only
+lists hashes gone from the final document), which two separate calls would lose. Use
+the single-bullet commands only for a genuinely lone edit. Collect this close's BACKLOG
+MATCH removals (Step 5) and reality-rescue additions (below) into the same batch where
+they happen together. Use `update-reality` only when a change also reworks existing bullets' wording
 in place or restructures sections (e.g. a corpus distillation pass) — the reword-drift
 carryover logic only runs on that full-document path.
 
