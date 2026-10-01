@@ -260,8 +260,9 @@ If the reason describes a deliberate reprioritization, offer to log it via `log-
 ### Step 4.1c — Verification contract scoring (P55)
 
 Check `goal_contracts` in the close-context output *(carried into this step's context
-from Step 1 — no second read needed)*. If no contracts exist for any completed goal,
-skip silently.
+from Step 1 — no second read needed)*. It already holds only this session's goals'
+contracts (close-context filters out older ones), so no hand-filtering is needed. If no
+contracts exist for any completed goal, skip silently.
 
 For each completed goal **with a contract** (match by goal_text hash):
 ```
