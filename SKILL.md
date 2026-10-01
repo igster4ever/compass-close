@@ -367,7 +367,8 @@ outputs (which goals completed, what got distilled), so it has to render after t
   already confirmed by this close's reality.md text, `action-skill-feedback` it
   silently before considering it for the checklist.
 - **F — Backlog match:** call `match-backlog <namespace> '{"context": "<note +
-  completed-items text>"}'`. Eligible if `candidates` is non-empty. This catches a
+  completed-items text>"}'`. Eligible if `candidates` is non-empty (items this session
+  appended are already left out, in `excluded_same_session` — don't offer those). This catches a
   gap outcome-linking (item B) can't: B only checks goals *declared* at DECIDE, but a
   Tactical/Strategic backlog item can also be resolved by ad-hoc work the user asked
   for mid-session — never a formal goal — which B has no way to see. Without this
@@ -421,9 +422,11 @@ gating decision, not the underlying mechanics or script calls:**
 - **FEEDBACK → Y (or inline text):** if no text was supplied inline, ask *"One
   sentence: what felt slow, broken, or missing?"* then the step_ref/failure-dimension
   follow-up exactly as before, then `log-skill-feedback`. Declined/no signal → skip.
-- **BACKLOG MATCH → Y (per candidate):** call `remove-reality-bullet <namespace>
-  '<bullet_hash>'` — the hash `match-backlog` returns is already the one
-  `_parse_reality_bullets` would compute, no re-derivation needed. This only removes
+- **BACKLOG MATCH → Y (per candidate):** make one `reality-bullets-batch <namespace>`
+  call with a `{"op": "remove", "hash_or_text": "<bullet_hash>", "reason": "resolved by
+  this session: <goal or commit>"}` op per accepted candidate — the hash `match-backlog`
+  returns is already the one `_parse_reality_bullets` would compute, and the reason is
+  kept in `reality_changes.jsonl`. This only removes
   the stale backlog entry; it does not itself add a "what exists" bullet documenting
   the resolution — if that's warranted, it's covered by Step 6's reality-rescue/
   auto-distil pass below, not duplicated here. **N**/default-declined → skip that
