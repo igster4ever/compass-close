@@ -49,7 +49,8 @@ so the close response reports its own `close_duration_seconds`/`close_command_co
 (2026-08-27 close-overhead audit finding #6) without a hand transcript-tally.
 
 `close-context` replaces the old `read` call — it returns `planned_actions`,
-`reality_validation` (hashes), `goal_contracts`, `decay_candidates` (P2.2),
+`reality_validation` (hashes), `session_appended_bullets` (`{hash, text, section}` for
+bullets appended this session), `goal_contracts`, `decay_candidates` (P2.2),
 `fact_decay_candidates` (P-GC2), `retrieval_stale_candidates` (P58), and
 `corpus_summary_due`: the slices this close path actually needs, instead of the full
 orient context (finding #1). Hold all of these — they feed Step 4.1c (`goal_contracts`),
@@ -411,10 +412,13 @@ gating decision, not the underlying mechanics or script calls:**
   `claude-md-management:revise-claude-md` for broad changes; edit inline for 1–2 lines.
   `N`/default-declined → skip silently, do not re-surface.
 - **OUTCOME → Y:** for each completed goal, ask which reality bullet(s) it produced —
-  match the fragment against Step 1's `close-context` `reality_validation` hashes
-  (already fetched, no `read`), **this namespace only** — never a watched or otherwise
-  related namespace, even on a superficial text match. Call `link-goal-outcome` per
-  match, then `get-outcome-stats` and confirm the updated rate. `n`/default-declined → skip.
+  start from Step 1's `close-context` `session_appended_bullets` (already fetched, no
+  `read`), **this namespace only** — never a watched or otherwise related namespace,
+  even on a superficial text match. Make one `link-goal-outcomes-batch` call for all
+  goals; each item takes `bullet_texts` (an exact text or a unique substring) and/or
+  `bullet_hashes`. An item whose text matches nothing or several bullets fails with
+  `unmatched_texts`/`ambiguous_texts` and changes nothing. Then `get-outcome-stats` and
+  confirm the updated rate. `n`/default-declined → skip.
 - **PROPAGATE → Y:** read `~/.claude/skills/compass/scripts/prompts/cross-namespace-propagation.md`
   and follow it (covers the Y/Y-generic/n sub-choice and the `log-learning global` call).
 - **DECAY → "review":** present the batched decay list exactly as Step 6 below
@@ -552,7 +556,8 @@ it: `⚠ <advisory text>` — this is what makes the guidance above self-correct
 of relying on memory alone.
 
 Auto-verify the subset of the response's `new_bullet_hashes` that correspond to
-bullets promoted to "What exists and works" this session:
+bullets promoted to "What exists and works" this session. Bullets already stamped by
+verify-on-write (the response's `write_verified`) are left out of `new_bullet_hashes`:
 ```bash
 /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py verify-reality <namespace> \
   '<JSON array of new_bullet_hashes for completed-todo-derived bullets>'
