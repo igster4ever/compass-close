@@ -566,22 +566,18 @@ verify-on-write (the response's `write_verified`) are left out of `new_bullet_ha
   '<JSON array of new_bullet_hashes for completed-todo-derived bullets>'
 ```
 
-**Prompt-count tally (2026-09-01, `docs/2026-08-31-consolidate-open-close-prompts-plan.md`
-in the `compass` skill):** count every distinct interactive screen actually presented
-across this sub-skill's Steps 2–5 (Step 4's batch counts as **one**, not one per family;
-Step 5's checklist counts as one whether or not it renders). Include this total as
-`close_prompt_count` in the payload below, alongside `open_prompt_count` carried forward
-from `compass-open`'s own tally (omit either key if it genuinely wasn't tracked this
-session — e.g. a deep-close or multi-namespace-close path that didn't go through
-`compass-open`'s Step 4.6 hand-off). Write-only this session — no script or trend reads
-these yet, see the Strategic backlog for the deferred read-side `avg_last_5`.
+**Prompt-count tally:** each time Steps 2–5 show the user an interactive screen, run
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py tally-prompt <namespace> close` (Step 4's batch counts as **one**, not one per
+family; Step 5's checklist counts as one when it renders). `close` takes both counts
+from the script's tally, so the payload needs no prompt counts. Pass
+`open_prompt_count`/`close_prompt_count` only as an estimate for a phase you didn't
+tally; a tally always wins.
 
 Then close:
 ```bash
 /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py close <namespace> '<payload_json>'
 ```
-`<payload_json>` includes `"open_prompt_count": <N>, "close_prompt_count": <M>` alongside
-the fields already documented above.
+`<payload_json>` holds the fields already documented above.
 
 **Reality compaction (archiving cadence, docs/reality-compaction-cadence-design.md in
 the `compass` skill):** always call this — it checks its own due-ness internally and is
@@ -599,7 +595,8 @@ prompt or an explanation when it doesn't fire.
 The response includes `close_duration_seconds`/`close_command_count` when
 `mark-close-start` ran at Step 1 (it always does, in this sub-skill) — no action
 needed, this is what a future overhead audit reads instead of hand-tallying. It also
-echoes `open_prompt_count`/`close_prompt_count` back when supplied.
+echoes `open_prompt_count`/`close_prompt_count`, with `prompt_count_sources` saying
+whether each came from the tally or the payload.
 
 ---
 
