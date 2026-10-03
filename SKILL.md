@@ -48,7 +48,8 @@ every namespace-bearing call from here to the final `close` tallies into that co
 so the close response reports its own `close_duration_seconds`/`close_command_count`
 (2026-08-27 close-overhead audit finding #6) without a hand transcript-tally.
 
-`close-context` replaces the old `read` call — it returns `planned_actions`,
+`close-context` replaces the old `read` call (for exact key names, run
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py schema close-context`) — it returns `planned_actions`,
 `reality_validation` (hashes), `session_appended_bullets` (`{hash, text, section}` for
 bullets appended this session), `goal_contracts`, `decay_candidates` (P2.2),
 `fact_decay_candidates` (P-GC2), `retrieval_stale_candidates` (P58), and
@@ -369,7 +370,9 @@ outputs (which goals completed, what got distilled), so it has to render after t
   already confirmed by this close's reality.md text, `action-skill-feedback` it
   silently before considering it for the checklist.
 - **F — Backlog match:** call `match-backlog <namespace> '{"context": "<note +
-  completed-items text>"}'`. Eligible if `candidates` is non-empty (items this session
+  completed-items text>"}'`. Key names: `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py schema match-backlog`. The script
+  saves the result and `close` writes it into the history snapshot (`## Backlog match`),
+  so don't copy candidates into the note. Eligible if `candidates` is non-empty (items this session
   appended are already left out, in `excluded_same_session` — don't offer those). This catches a
   gap outcome-linking (item B) can't: B only checks goals *declared* at DECIDE, but a
   Tactical/Strategic backlog item can also be resolved by ad-hoc work the user asked
@@ -607,9 +610,10 @@ document them (not duplicated here — same files, same triggers):
 
 1. **Skill patch check** — `~/.claude/skills/compass/SKILL.md`'s "## Skill patch
    check" section.
-2. **Close-time skill harvesting** (complexity trigger) — read
-   `~/.claude/skills/compass/scripts/prompts/skill-opportunity-detection.md`
-   (Close-time section) if the complexity trigger fires.
+2. **Close-time skill harvesting** (complexity trigger) — if the complexity trigger
+   fires, load the section with
+   `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt skill-opportunity-detection --section "Close-time: skill harvesting"`
+   and follow it.
 
 (Cross-namespace propagation already ran, if eligible, inside Step 5's checklist —
 do not run it again here.)
