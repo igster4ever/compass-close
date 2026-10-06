@@ -174,7 +174,8 @@ dependency on another, so they render together instead of as four separate gates
   session, combine three already-existing inference passes into one line instead of three
   separate ones: goal-origin (batch-inferred, P52, unchanged), suggested tags
   (`suggest-tags`, unchanged), and type + zone (use `inferred_zone` from `log-learning`'s
-  response if present, else default type `fact` / zone `skip`).
+  response if present, else default type `fact` / zone `none`; never render `skip` —
+  `set-learning-zones-batch` rejects it).
 
 Render:
 ```
@@ -184,7 +185,7 @@ Render:
   2. [BOOST] "<learning text, first 60 chars>" [w:<weight>] → boost? (default: no — <rationale>)
   3. [GOAL 0] "<goal text, first 60 chars>" → status? (default: completed — evidence: <commit/reality match>)
   4. [GOAL 1] "<goal text, first 60 chars>" → status? (needs input — no evidence either way)
-  5. [LEARNING 1] "<learning text, first 60 chars>" → goal: 0 | tags: [tooling, process] | type: fact | zone: skip (default: accept)
+  5. [LEARNING 1] "<learning text, first 60 chars>" → goal: 0 | tags: [tooling, process] | type: fact | zone: none (default: accept)
   6. [LEARNING 2] "<learning text, first 60 chars>" → goal: cross-goal | tags: [process] | type: procedural | zone: golden (default: accept)
   ...
 
@@ -217,8 +218,10 @@ Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]
   where the zone pattern below would have collapsed both into one call):
   ```bash
   /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py boost-learnings-batch <namespace> \
-    '{"texts": ["<exact learning text 1>", "<exact learning text 2>", ...]}'
+    '{"learning_ids": ["<learning_id 1>", ...], "texts": ["<exact text, for entries with no id>"]}'
   ```
+  Use the `learning_id` that `log-learnings-batch` returned for this session's learnings;
+  a prior-session learning from `surface-learnings` also carries one. Do not re-send the text.
   Skip this call entirely if `pending_boosts` ends up empty. **Boosting prior learnings
   (P4):** if this session's work reconfirmed a *prior* learning, add it to this same list
   too — never call `boost-learning` directly.
@@ -237,7 +240,7 @@ Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]
   right before Step 6's `close`:
   ```bash
   /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py set-learning-zones-batch <namespace> \
-    '[{"text": "<exact text 1>", "zone": "golden"}, {"text": "<exact text 2>", "zone": "warning"}]'
+    '[{"learning_id": "<id 1>", "zone": "golden"}, {"learning_id": "<id 2>", "zone": "warning"}]'
   ```
   This is finding #3 from the 2026-08-27 close-overhead audit — a shell loop over
   individual `set-learning-zone` calls still forks one subprocess per call even when
@@ -289,7 +292,8 @@ Must run before the close payload is built:
     {"text": "<learning text 2>", "tags": [...], "reconcile": true}]'
 ```
 
-Walk the returned `results` in order (matched by `text`):
+Walk the returned `results` in order (matched by `text`). Keep each result's `learning_id`:
+zone and boost batches take it in place of the full text.
 
 - **`ok: true`, no `reconciliation_action`** → already recorded; pass `"learnings": []`
   in the close payload for these.
