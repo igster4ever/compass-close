@@ -6,7 +6,7 @@ in the `compass` skill).
 Invoked from `/compass`'s RALF half when `path=fast`. **Phase 1 scope: fast close
 only** — deep close and multi-namespace close still run inline in the parent
 `~/.claude/skills/compass/SKILL.md` (its own "Deep close" / "Multi-namespace close"
-sections) until Phases 2–3 of the design doc extract them too. Do not route those
+sections, now loaded from `scripts/prompts/router-sections.md`) until Phases 2–3 of the design doc extract them too. Do not route those
 paths here.
 
 **v1 consolidation (2026-09-01, `docs/2026-08-31-consolidate-open-close-prompts-plan.md`
@@ -92,9 +92,8 @@ If `note` is empty AND the todo list shows no completed items, prompt once: "Not
 Unchanged from the parent SKILL.md's prior "Step 2b.0" — moved here (2026-09-01) so it
 has its own step now that the boost check it used to sit inside has moved to Step 4.
 Run after the compact summary, before code context. Trigger conditions, prompt, and
-`save-artefact` call are identical to the parent's previous fast-close Step 2b.0 — see
-`~/.claude/skills/compass/scripts/prompts/compass-commands.md` if you need the full text
-restated; otherwise this is rare enough to keep inline knowledge of from prior sessions.
+`save-artefact` call are identical to the parent's previous fast-close Step 2b.0 and are
+restated below.
 
 Trigger if **either**:
 - **A:** note or completed todos contain "diagram", "chart", "widget", "SVG", "visual", "dashboard", "panel".
@@ -426,7 +425,8 @@ gating decision, not the underlying mechanics or script calls:**
   `bullet_hashes`. An item whose text matches nothing or several bullets fails with
   `unmatched_texts`/`ambiguous_texts` and changes nothing. Then `get-outcome-stats` and
   confirm the updated rate. `n`/default-declined → skip.
-- **PROPAGATE → Y:** read `~/.claude/skills/compass/scripts/prompts/cross-namespace-propagation.md`
+- **PROPAGATE → Y:** load
+  `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt cross-namespace-propagation --section "Cross-namespace learning propagation"`
   and follow it (covers the Y/Y-generic/n sub-choice and the `log-learning global` call).
 - **DECAY → "review":** present the batched decay list exactly as Step 6 below
   describes, collecting Y/N per candidate. `N`/decline-all → skip the
@@ -606,11 +606,12 @@ whether each came from the tally or the payload.
 
 ## After close (still in this sub-skill, before returning)
 
-Run, in order, exactly as the parent SKILL.md's standalone top-level sections
-document them (not duplicated here — same files, same triggers):
+Run, in order, exactly as the parent's sections document them (not duplicated here —
+same files, same triggers):
 
-1. **Skill patch check** — `~/.claude/skills/compass/SKILL.md`'s "## Skill patch
-   check" section.
+1. **Skill patch check** — load the section with
+   `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt router-sections --section "Skill patch check"`
+   and follow it.
 2. **Close-time skill harvesting** (complexity trigger) — if the complexity trigger
    fires, load the section with
    `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt skill-opportunity-detection --section "Close-time: skill harvesting"`
