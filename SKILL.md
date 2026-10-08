@@ -220,7 +220,9 @@ Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]
     '{"learning_ids": ["<learning_id 1>", ...], "texts": ["<exact text, for entries with no id>"]}'
   ```
   Use the `learning_id` that `log-learnings-batch` returned for this session's learnings;
-  a prior-session learning from `surface-learnings` also carries one. Do not re-send the text.
+  a prior-session learning from `surface-learnings` or a `suggest-boosts` candidate also
+  carries one. Do not re-send the text. A `suggest-boosts` candidate with `learning_id: null`
+  is a legacy entry: put its `full_text` (the `text` field is cut at 80 characters) in `texts`.
   Skip this call entirely if `pending_boosts` ends up empty. **Boosting prior learnings
   (P4):** if this session's work reconfirmed a *prior* learning, add it to this same list
   too — never call `boost-learning` directly.
