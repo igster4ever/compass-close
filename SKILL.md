@@ -404,9 +404,10 @@ verify-on-write (the response's `write_verified`) are left out of `new_bullet_ha
 ```
 
 **Prompt-count tally:** each time Steps 2–5 show the user an interactive screen, run
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py tally-prompt <namespace> close` (Step 4's batch counts as **one**, not one per
-family; Step 5's checklist counts as one when it renders). `close` takes both counts
-from the script's tally, so the payload needs no prompt counts. Pass
+`compass.py tally-prompt <namespace> close <screen>` with a short key (`summary`, `batch`,
+`checklist`, `conflicts`): repeating a key never double counts, and Step 4's batch is
+**one**, not one per family. `close` takes both counts from the script's tally, so the
+payload needs no prompt counts, and warns when a tally looks implausibly high. Pass
 `open_prompt_count`/`close_prompt_count` only as an estimate for a phase you didn't
 tally; a tally always wins.
 
