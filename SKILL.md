@@ -89,24 +89,7 @@ If `note` is empty AND the todo list shows no completed items, prompt once: "Not
 
 ## Step 2.1 — Artefact capture offer (P41)
 
-Unchanged from the parent SKILL.md's prior "Step 2b.0" — moved here (2026-09-01) so it
-has its own step now that the boost check it used to sit inside has moved to Step 4.
-Run after the compact summary, before code context. Trigger conditions, prompt, and
-`save-artefact` call are identical to the parent's previous fast-close Step 2b.0 and are
-restated below.
-
-Trigger if **either**:
-- **A:** note or completed todos contain "diagram", "chart", "widget", "SVG", "visual", "dashboard", "panel".
-- **B (compass-dashboard namespace only):** `~/Downloads/compass-dashboard.html` modified after `last_open`.
-
-If neither holds: skip entirely — no prompt. Otherwise offer once:
-```
-🖼 Visual artefact to save from this session? (title or skip)
-```
-- **skip / enter** → continue silently
-- **title provided** → confirm tags/description inline, then `save-artefact`.
-
-**Rule:** one prompt only — never re-offer mid-session or at ORIENT.
+Run after the compact summary, before code context. Trigger if **either**: A) the note or completed todos contain "diagram", "chart", "widget", "SVG", "visual", "dashboard" or "panel"; B) (`compass-dashboard` namespace only) `~/Downloads/compass-dashboard.html` was modified after `last_open`. Neither → skip, no prompt. Otherwise load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 2.1 — Artefact capture offer (P41)"` and follow it.
 
 ---
 
@@ -253,36 +236,11 @@ Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]
 
 ### Step 4.1a — Reason capture for blocked/abandoned goals (P14)
 
-For each goal marked **B** (blocked) or **A** (abandoned) at Step 4, immediately follow up:
-```
-Goal <N>: "<goal text>" → B (blocked)
-  Brief reason? (or enter to skip)
-```
-Capture the response. Include in the close payload `incomplete` array as a dict:
-```json
-{"text": "<goal text>", "status": "blocked", "reason": "<user reason>"}
-```
-If the reason describes a deliberate reprioritization, offer to log it via `log-decision`.
+For each goal marked **B** or **A** at Step 4, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 4.1a — Reason capture for blocked/abandoned goals (P14)"` and follow it. No B/A goals → skip.
 
 ### Step 4.1c — Verification contract scoring (P55)
 
-Check `goal_contracts` in the close-context output *(carried into this step's context
-from Step 1 — no second read needed)*. It already holds only this session's goals'
-contracts (close-context filters out older ones), so no hand-filtering is needed. If no
-contracts exist for any completed goal, skip silently.
-
-For each completed goal **with a contract** (match by goal_text hash):
-```
-📋 Contract check — "<goal text>"
-Criteria:
-1. <criterion 1>
-2. <criterion 2>
-3. <criterion 3>
-
-Which were met? (comma-separated numbers, or "all" / "none")
-```
-Capture response; call `verify-goal-contract` with `verified_criteria`/`unmet_criteria`.
-Surface: `✓ Contract score: <N>/<total> criteria verified.`
+If `goal_contracts` in Step 1's `close-context` output holds a contract for any completed goal, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 4.1c — Verification contract scoring (P55)"` and follow it. Otherwise skip silently.
 
 ### Step 4.5 — Cross-namespace learning conflicts (P2.1) — mandatory
 
@@ -294,42 +252,7 @@ Must run before the close payload is built:
     {"text": "<learning text 2>", "tags": [...], "reconcile": true}]'
 ```
 
-Walk the returned `results` in order (matched by `text`). Keep each result's `learning_id`:
-zone and boost batches take it in place of the full text.
-
-- **`ok: true`, no `reconciliation_action`** → already recorded; pass `"learnings": []`
-  in the close payload for these.
-- **`reconciliation_action: "pending"`** → near-duplicate found, write withheld:
-  ```
-  💭 Near-duplicate detected (Jaccard: <score>):
-    New:      "<new text, first 80 chars>"
-    Existing: "<existing text, first 80 chars>"
-    Rewrite (merge) / Keep both / Suppress new?
-  ```
-  If `rewrite`: keep every concrete fact from both texts — never drop a name, number,
-  date, condition, or exception assuming it's redundant. Prefer `keep_both` over a
-  lossy rewrite when genuinely unsure. Apply via `apply-learning-reconciliation`.
-- **`contradiction_candidate` present** (non-blocking advisory):
-  ```
-  ⚡ Possible contradiction (Jaccard: <score>):
-    New:      "<new text, first 80 chars>"
-    Existing: "<existing text, first 80 chars>"
-    Mark existing as superseded by new? [Y / N]
-  ```
-  If `golden_zone_conflict: true`, prefix with `⚠ Golden-zone pattern being
-  contradicted —` and treat with more urgency (still Y/N, never auto-supersede).
-  **Y** → `approve-dream-merge` with the new text as anchor.
-- **`require_conflict_resolution: true`** → conflict in another namespace:
-  ```
-  ⚠ Learning exists in other namespace(s):
-  "<learning text>"
-    Found in: global (weight: 2, tags: [process, architecture])
-  How to handle? M: Merge / D: Diverge / L: Link
-  ```
-  **M** → increment weight in the source namespace, don't duplicate here.
-  **D** / **L** → call `resolve-learning-conflict` directly with the full learning
-  payload (`decision: "diverge"|"link"`) — it writes the entry itself. **Do not**
-  call `log-learning` afterwards; it would re-raise the identical conflict.
+Walk the returned `results` in order (matched by `text`) and keep each `learning_id`: zone and boost batches take it in place of the full text. An `ok: true` result with no `reconciliation_action` is already recorded — pass `"learnings": []` in the close payload for it. If any result carries `reconciliation_action: "pending"`, a `contradiction_candidate`, or `require_conflict_resolution: true`, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 4.5 — Result handling (reconciliation, contradiction, cross-namespace conflict)"` and follow it.
 
 ### Step 4.6 — Intent change reason (P1.2)
 
@@ -419,17 +342,10 @@ Map the response:
 **Then run each accepted item's full existing sub-flow — this step only collapses the
 gating decision, not the underlying mechanics or script calls:**
 
-- **CLAUDE.md → Y:** apply inline (module map entry and/or gotcha section). Use
-  `claude-md-management:revise-claude-md` for broad changes; edit inline for 1–2 lines.
-  `N`/default-declined → skip silently, do not re-surface.
-- **OUTCOME → Y:** for each completed goal, ask which reality bullet(s) it produced —
-  start from Step 1's `close-context` `session_appended_bullets` (already fetched, no
-  `read`), **this namespace only** — never a watched or otherwise related namespace,
-  even on a superficial text match. Make one `link-goal-outcomes-batch` call for all
-  goals; each item takes `bullet_texts` (an exact text or a unique substring) and/or
-  `bullet_hashes`. An item whose text matches nothing or several bullets fails with
-  `unmatched_texts`/`ambiguous_texts` and changes nothing. Then `get-outcome-stats` and
-  confirm the updated rate. `n`/default-declined → skip.
+- **CLAUDE.md → Y:** load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 5 item — CLAUDE.md"` and follow it.
+
+- **OUTCOME → Y:** load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 5 item — OUTCOME"` and follow it.
+
 - **PROPAGATE → Y:** decide the as-is vs generalised wording **at render time** (above), so
   the checklist's accept-all is the only confirmation — never a second "use this wording?"
   turn. `3o` pushes the original wording; `3n` skips. Then load
@@ -439,19 +355,9 @@ gating decision, not the underlying mechanics or script calls:**
 - **DECAY → "review":** present the batched decay list exactly as Step 6 below
   describes, collecting Y/N per candidate. `N`/decline-all → skip the
   `approve-learning-decay` call entirely.
-- **FEEDBACK → Y (or inline text):** if no text was supplied inline, ask *"One
-  sentence: what felt slow, broken, or missing?"* then the step_ref/failure-dimension
-  follow-up exactly as before, then `log-skill-feedback`. Declined/no signal → skip.
-- **BACKLOG MATCH → Y (per candidate):** make one `reality-bullets-batch <namespace>`
-  call with a `{"op": "remove", "hash_or_text": "<bullet_hash>", "reason": "resolved by
-  this session: <goal or commit>"}` op per accepted candidate — the hash `match-backlog`
-  returns is already the one `_parse_reality_bullets` would compute, and the reason is
-  kept in `reality_changes.jsonl`. This only removes
-  the stale backlog entry; it does not itself add a "what exists" bullet documenting
-  the resolution — if that's warranted, it's covered by Step 6's reality-rescue/
-  auto-distil pass below, not duplicated here. **N**/default-declined → skip that
-  candidate, leave the backlog item as-is (it may be a false-positive keyword match,
-  not an actual resolution — never remove without confirmation).
+- **FEEDBACK → Y (or inline text):** load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 5 item — FEEDBACK"` and follow it.
+
+- **BACKLOG MATCH → Y (per candidate):** load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 5 item — BACKLOG MATCH"` and follow it.
 
 **Rule:** one screen, one round trip for the fully-nominal case. Per-item drill-in
 only for items the user overrides or that inherently need free text.
@@ -460,20 +366,7 @@ only for items the user overrides or that inherently need free text.
 
 ## Step 6 — Auto-distil, decay, corpus health, reality, and close
 
-**Reality rescue (no-todos guard):** if completed todos are empty AND `note` is
-non-empty, work happened but was never tracked:
-```
-⚠ No completed todos, but your note describes work.
-Derive a reality update from it? [Y/n]
-```
-**Y**/enter → extract 1–3 bullets describing what now exists and works. These are pure
-additions — prefer `append-reality-bullet <namespace> "## What exists and works"
-"<bullet text>"` for a single bullet, or one `reality-bullets-batch` call for 2–3
-(2026-08-28 audit finding #4; batch primitive 2026-09-29) over the close payload's
-`reality` field, which requires reconstructing the whole document. Reserve the
-`reality` field / `update-reality` for cases that also reword existing bullets or
-restructure sections. **N** → skip; state this explicitly at
-the end.
+**Reality rescue (no-todos guard):** if completed todos are empty AND `note` is non-empty, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 6 — Reality rescue (no-todos guard)"` and follow it. Otherwise skip.
 
 **Auto-distil:** from completed todos, git log, and any user note, distil **one**
 durable learning automatically — do not present it for approval unless the note
@@ -483,31 +376,9 @@ contains something non-obvious that warrants a check.
 `incomplete` arrays from the current todo list state. If the todo list is empty,
 derive `completed` from goals marked **C** at Step 4 instead.
 
-**Learning decay (P2.2 + P-GC2 + P58):** if Step 5's DECAY item was accepted (or no
-checklist fired because DECAY was the only signal and defaulted through), present the
-batched list:
-```
-🗑 Decay candidates (<N>):
+**Learning decay (P2.2 + P-GC2 + P58):** if Step 5's DECAY item was accepted (or DECAY was the only signal and defaulted through), load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 6 — Learning decay review"` and follow it. Otherwise skip.
 
-- "<text>" (65d ago, confidence: low)                       [hypothesis, P2.2]
-  Discard? Y/N
-- "<text>" (20 sessions unreinforced, tags: [tooling])       [fact, P-GC2]
-  Y/N?
-- "<text>" (surfaced 22 times, weight still 1)               [retrieval-stale, P58]
-  Y/N?
-...
-```
-Collect all **Y** into one `approve-learning-decay` call. If a removed text's response
-carries non-empty `cross_namespace_refs`/`community_published`, surface the P63a
-decay-cascade advisory once, batched, exactly as before.
-
-**Corpus health (P10):** from Step 1's `close-context` output, `corpus_summary_due` —
-already fetched, no second call:
-- `false` → skip silently.
-- `true` → `summarise-learnings <namespace>`; if `summarisation_needed: true`, offer
-  distillation review exactly as the parent SKILL.md previously documented (group by
-  theme, `approve-learning-decay` with `approved_ids`, `log-learning` with `weight: 3`
-  per synthesis entry). Max once per 5 sessions per namespace.
+**Corpus health (P10):** if Step 1's `close-context` `corpus_summary_due` is `true`, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 6 — Corpus health (P10)"` and follow it. `false` → skip silently.
 
 **Flush pending zone assignments** (Step 4) via `set-learning-zones-batch` now, if
 the list is non-empty and hasn't been flushed yet.
@@ -522,53 +393,7 @@ Any non-empty value unconditionally overwrites `reality.md`, even if `update-rea
 was already called separately this close. If reality was already written via a prior
 `update-reality` call, the `close` payload's `reality` field **must** be `""`.
 
-**Prefer the single-bullet primitives when the change is a pure add or remove**
-(2026-08-28 audit finding #4 — `update-reality` reads the whole document out,
-requires reconstructing it in full, and writes it all back, so its cost scales with
-total reality.md size, not the size of the actual edit):
-```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py append-reality-bullet <namespace> '<section_header>' '<bullet text>'
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py remove-reality-bullet <namespace> '<bullet_hash>'
-```
-**Two or more edits in one close → one `reality-bullets-batch` call instead**
-(friction-review-2026-09-25 — one session made ~15 separate single-bullet calls):
-```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py reality-bullets-batch <namespace> '[
-  {"op": "remove", "hash_or_text": "<bullet_hash or exact text>"},
-  {"op": "append", "section": "## What exists and works", "text": "<bullet text>"}
-]'
-```
-Ops apply in order, and the call is all-or-nothing: if any op fails, nothing is written
-and each op's `results` entry says why (`available_headers` / `current_reality_bullets`,
-same diagnostics as the single-bullet commands) — fix and resend the whole array. A
-"move" (e.g. a Backlog item shipping) is one `remove` plus one `append`; if the text is
-unchanged, batching it keeps the bullet's verification record (`pruned_hashes` only
-lists hashes gone from the final document), which two separate calls would lose. Use
-the single-bullet commands only for a genuinely lone edit. Collect this close's BACKLOG
-MATCH removals (Step 5) and reality-rescue additions (below) into the same batch where
-they happen together. Use `update-reality` only when a change also reworks existing bullets' wording
-in place or restructures sections (e.g. a corpus distillation pass) — the reword-drift
-carryover logic only runs on that full-document path.
-
-*(Unlike most other compass write commands, `append-reality-bullet` takes two plain
-positional strings, not a JSON blob — `<section_header>` must be the exact rendered
-Markdown heading, e.g. `"### Tactical"`; a heading that doesn't exist returns
-`available_headers` rather than guessing.)*
-
-If a full rewrite is genuinely needed, write it via the script — never write
-reality.md directly. Pass the content by writing it to a file first and reading the
-file back into the call, never via inline `$(...)` shell substitution:
-```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py update-reality <namespace> '<new_reality_text>'
-```
-If this trips the bullet-collapse guard on a genuinely intentional rewrite (a large,
-deliberate condensing of reality, not a broken substitution), re-run with `--force`.
-
-**Check the response's `advisory` field (2026-09-02).** If non-null, `update-reality`
-detected a pure addition (0 removed, 0 reworded) — exactly the shape
-`append-reality-bullet` exists for. Surface it plainly rather than silently ignoring
-it: `⚠ <advisory text>` — this is what makes the guidance above self-correcting instead
-of relying on memory alone.
+Reality edits go through the script, never the file. A pure add or remove → `append-reality-bullet` / `remove-reality-bullet`; two or more edits → one all-or-nothing `reality-bullets-batch`; a full rewrite (rewording or restructuring) → `update-reality`. For the call shapes, the move-keeps-verification rule and the `advisory` field, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 6 — Reality write primitives"`. Collect this close's BACKLOG MATCH removals and reality-rescue additions into the same batch.
 
 Auto-verify the subset of the response's `new_bullet_hashes` that correspond to
 bullets promoted to "What exists and works" this session. Bullets already stamped by
