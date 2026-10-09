@@ -583,7 +583,9 @@ Then close:
 ```bash
 /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py close <namespace> '<payload_json>'
 ```
-`<payload_json>` holds the fields already documented above.
+`<payload_json>` holds the fields already documented above. For exact key names run
+`compass.py schema close` (its `_payload` block) rather than grepping the script; a key the
+script does not read comes back as an `Unknown close payload key` entry in `warnings`.
 
 **Reality compaction (archiving cadence, docs/reality-compaction-cadence-design.md in
 the `compass` skill):** always call this — it checks its own due-ness internally and is
