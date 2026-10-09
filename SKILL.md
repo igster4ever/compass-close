@@ -172,9 +172,10 @@ dependency on another, so they render together instead of as four separate gates
 - **Per-learning line** (P0.2 + P4.1 + P6/P1.1/P56) — for each learning distilled this
   session, combine three already-existing inference passes into one line instead of three
   separate ones: goal-origin (batch-inferred, P52, unchanged), suggested tags
-  (`suggest-tags`, unchanged), and type + zone (use `inferred_zone` from `log-learning`'s
-  response if present, else default type `fact` / zone `none`; never render `skip` —
-  `set-learning-zones-batch` rejects it).
+  (`suggest-tags`), and type + zone (use `inferred_zone` from the same `suggest-tags`
+  response — pass `learning_type` in its payload when the type is not `fact` — because
+  `log-learning` runs only after this screen; `null` renders as zone `none`; never render
+  `skip` — `set-learning-zones-batch` rejects it).
 
 Render:
 ```
