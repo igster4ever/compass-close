@@ -395,7 +395,9 @@ outputs (which goals completed, what got distilled), so it has to render after t
 
   1. [CLAUDE.md]      <N> candidate update(s) detected → apply? (default: yes)
   2. [OUTCOME]         <N> goal(s) completed → link to reality bullets? (default: yes)
-  3. [PROPAGATE]       "<learning, condensed>" tagged `<tag>` → push to global? (default: yes)
+  3. [PROPAGATE]       "<learning, condensed>" tagged `<tag>` → push to global as-is? (default: yes)
+                       — or, when the wording names modules/paths/services/skills:
+                       → push to global as: "<generalised wording>"  [3o = original wording]
   4. [DECAY]           <N> decay/retrieval-stale candidate(s) → review for discard? (default: review)
   5. [FEEDBACK]        any protocol friction to log? (default: no)
   6. [BACKLOG MATCH]   "<item text, condensed>" ([tactical|strategic]) looks resolved by
@@ -428,9 +430,12 @@ gating decision, not the underlying mechanics or script calls:**
   `bullet_hashes`. An item whose text matches nothing or several bullets fails with
   `unmatched_texts`/`ambiguous_texts` and changes nothing. Then `get-outcome-stats` and
   confirm the updated rate. `n`/default-declined → skip.
-- **PROPAGATE → Y:** load
+- **PROPAGATE → Y:** decide the as-is vs generalised wording **at render time** (above), so
+  the checklist's accept-all is the only confirmation — never a second "use this wording?"
+  turn. `3o` pushes the original wording; `3n` skips. Then load
   `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt cross-namespace-propagation --section "Cross-namespace learning propagation"`
-  and follow it (covers the Y/Y-generic/n sub-choice and the `log-learning global` call).
+  and follow it (its "From the close checklist" block routes as-is vs generalised and covers
+  the `log-learning global` call; no sub-prompt).
 - **DECAY → "review":** present the batched decay list exactly as Step 6 below
   describes, collecting Y/N per candidate. `N`/decline-all → skip the
   `approve-learning-decay` call entirely.
