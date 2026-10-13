@@ -1,36 +1,20 @@
 # compass-close
 
-Fast-close sub-skill for the compass loop (P25 Phase 1 — `docs/compass-close-sop.md`
-in the `compass` skill).
+Fast-close sub-skill for `/compass` (P25; `docs/compass-close-sop.md` in the `compass` skill),
+invoked from its RALF half when `path=fast`. Deep close and multi-namespace close still run from
+the router's `scripts/prompts/router-sections.md`; do not route them here.
 
-Invoked from `/compass`'s RALF half when `path=fast`. **Phase 1 scope: fast close
-only** — deep close and multi-namespace close still run inline in the parent
-`~/.claude/skills/compass/SKILL.md` (its own "Deep close" / "Multi-namespace close"
-sections, now loaded from `scripts/prompts/router-sections.md`) until Phases 2–3 of the design doc extract them too. Do not route those
-paths here.
+**Consolidation (v1, 2026-09-01, `docs/2026-08-31-consolidate-open-close-prompts-plan.md`):** the
+boost check, goal completion status, goal-to-learning mapping, tag suggestions and learning
+type/zone classification are one screen, **Step 4**. Step 5's checklist stays a separate screen
+because its eligibility depends on Step 4's outputs. The artefact capture offer lives at Step 2.1.
 
-**v1 consolidation (2026-09-01, `docs/2026-08-31-consolidate-open-close-prompts-plan.md`
-in the `compass` skill):** the boost check (old Step 2.1), goal completion status (old
-Step 4.1), goal-to-learning mapping (old Step 4.2), tag suggestions (old Step 4.3), and
-learning type/zone classification (old Step 4.4) are now one combined screen — **Step 4**
-— since none of the four has a hard sequential dependency on another. Step 5's existing
-checklist (already collapsed by the 2026-08-27 close-overhead audit) stays a separate
-screen right after it, since its eligibility genuinely depends on Step 4's outputs
-(completed goals, distilled learnings) and can't render before they exist. The artefact
-capture offer (old "Step 2b.0", embedded in old Step 2.1's text) now has its own home at
-Step 2.1. v2 (per-item confidence-gated auto-apply using P59 override history) is scoped
-in the same plan doc but not built — see the Strategic backlog.
+**Input:** `namespace`, plus the todo list state (inherited context; with no TodoWrite-equivalent
+tool, Step 1 falls back to `state.json`'s `goal_progress`).
 
-**Inputs (from invocation context):**
-- `namespace` — the compass namespace closing
-- current todo list state (inherited session context — no marshalling needed; falls
-  back to `state.json`'s `goal_progress` when this runtime has no TodoWrite-equivalent
-  tool, see Step 1)
-
-**Never call `compass.py close` directly as a shortcut.** Run Steps 1–6 in order.
-The `close` call is the final action of Step 6, not a replacement for the steps
-before it — skipping steps silently loses CLAUDE.md hygiene, code context, batched
-zone/decay decisions, and learnings.
+**Never call `compass.py close` directly as a shortcut.** Run Steps 1–6 in order: `close` /
+`close-apply` is the last action of Step 6, and skipping steps silently loses CLAUDE.md hygiene,
+code context, batched zone/decay decisions and learnings.
 
 ---
 
@@ -43,27 +27,20 @@ Run silently, in this order:
 ~/.claude/skills/compass/scripts/compass.sh gitlog <namespace>
 ```
 
-`mark-close-start` stamps `close_phase_started_at`/resets `close_phase_command_count` —
-every namespace-bearing call from here to the final `close` tallies into that counter,
-so the close response reports its own `close_duration_seconds`/`close_command_count`
-(2026-08-27 close-overhead audit finding #6) without a hand transcript-tally.
+`mark-close-start` stamps `close_phase_started_at` and resets `close_phase_command_count`, so
+the close response reports `close_duration_seconds`/`close_command_count` without a hand tally.
 
-`close-context` replaces the old `read` call (for exact key names, run
-`~/.claude/skills/compass/scripts/compass.sh schema close-context`) — it returns `planned_actions`,
-`reality_validation` (hashes), `session_appended_bullets` (`{hash, text, section}` for
-bullets appended this session), `goal_contracts`, `decay_candidates` (P2.2),
-`fact_decay_candidates` (P-GC2), `retrieval_stale_candidates` (P58), and
-`corpus_summary_due`: the slices this close path actually needs, instead of the full
-orient context (finding #1). Hold all of these — they feed Step 4.1c (`goal_contracts`),
-Step 5 item B (`reality_validation`), Step 5 item D / Step 6 (the three decay lists,
-`corpus_summary_due`).
+`close-context` returns only the slices this close needs (key names: `compass.sh schema
+close-context`): `planned_actions`, `reality_validation` (hashes), `session_appended_bullets`
+(`{hash, text, section}`), `goal_contracts`, `decay_candidates` (P2.2), `fact_decay_candidates`
+(P-GC2), `retrieval_stale_candidates` (P58) and `corpus_summary_due`. Hold them: Step 4.1c uses
+`goal_contracts`, Step 5 item B `reality_validation`, Step 5 item D and Step 6 the decay lists and
+`corpus_summary_due`.
 
-Read the current todo list state — this runtime's TodoWrite-equivalent tool if it has
-one, otherwise fall back to `close-context`'s `planned_actions` cross-referenced
-against `read`'s `goal_progress` array (2026-09-02 — a real session found `ToolSearch`
-returning nothing for TodoWrite at all; `goal_progress` is `open`'s host-independent
-substitute, updated via `set-goal-status` as goals complete mid-session, see
-compass-open's Step 4).
+Read the todo list state from the runtime's TodoWrite-equivalent tool if it has one; otherwise
+cross-reference `close-context`'s `planned_actions` against `read`'s `goal_progress` (the
+host-independent substitute `set-goal-status` updates as goals complete; a real session found no
+TodoWrite tool at all, 2026-09-02).
 
 ---
 
@@ -136,36 +113,27 @@ offer to create it:
 
 ## Step 4 — Consolidated close batch (v1 consolidation, 2026-09-01)
 
-If session is open (has `planned_actions` from Step 1's `close-context` output), build
-one combined screen covering the boost check (R5), goal completion status (P0.3), and
-the per-learning goal-mapping (P0.2) / tag suggestions (P4.1) / type-and-zone
-classification (P6, P1.1, P56) — none of these four families has a hard sequential
-dependency on another, so they render together instead of as four separate gates.
+If the session is open (`planned_actions` from Step 1's `close-context`), build one screen
+covering the boost check (R5), goal completion status (P0.3) and the per-learning goal-mapping
+(P0.2) / tag suggestions (P4.1) / type-and-zone classification (P6, P1.1, P56). None of the four
+depends on another, so they render together.
 
 **4.0 — Compute every default silently first:**
 
-- **Boost candidates** (R5) — unchanged from the old Step 2.1: run `suggest-boosts` with
-  the session context (note + completed items joined, `min_overlap: 2`, `max_results: 3`);
-  if `candidates` is empty, this family contributes nothing to the screen. For each
-  candidate, assess **boost** (session directly reinforced or depended on it) vs. **skip**
-  (incidental keyword overlap) with a one-clause rationale — same judgment as before, just
-  rendered here instead of its own screen.
-- **Goal completion defaults** (P0.3 + P-GC4) — for each planned goal, check the todo
-  list state (or `goal_progress[index]` on the fallback path — see Step 1) and scan
-  reality.md's most recent 'What exists and works' additions plus this session's git
-  commits for shipping evidence (same cross-check the old flow ran *before* asking).
-  If the todo item / `goal_progress` entry is marked done, or shipping evidence exists
-  → default: **Completed**, citing the evidence. Otherwise there is no confident
-  default — mark that item `(needs input)`; it is excluded from the bulk-accept
-  shortcut and always needs an explicit letter, even when every other item is
-  accepted via Enter.
-- **Per-learning line** (P0.2 + P4.1 + P6/P1.1/P56) — for each learning distilled this
-  session, combine three already-existing inference passes into one line instead of three
-  separate ones: goal-origin (batch-inferred, P52, unchanged), suggested tags
-  (`suggest-tags`), and type + zone (use `inferred_zone` from the same `suggest-tags`
-  response — pass `learning_type` in its payload when the type is not `fact` — because
-  `log-learning` runs only after this screen; `null` renders as zone `none`; never render
-  `skip` — `set-learning-zones-batch` rejects it).
+- **Boost candidates (R5):** run `suggest-boosts` with the session context (note + completed
+  items joined, `min_overlap: 2`, `max_results: 3`); no `candidates` → no BOOST lines. Per
+  candidate, judge **boost** (the session directly reinforced or depended on it) vs **skip**
+  (incidental keyword overlap), with a one-clause rationale.
+- **Goal completion defaults (P0.3 + P-GC4):** per planned goal, check the todo state (or
+  `goal_progress[index]`, Step 1) and scan reality.md's latest 'What exists and works' additions
+  plus this session's commits for shipping evidence. Marked done, or evidence found → default
+  **Completed**, citing it. Otherwise no confident default: mark it `(needs input)`, excluded from
+  bulk accept.
+- **Per-learning line (P0.2 + P4.1 + P6/P1.1/P56):** for each learning distilled this session,
+  one line combining goal-origin (batch-inferred, P52), suggested tags (`suggest-tags`) and type +
+  zone. Take the zone from `suggest-tags`' `inferred_zone` (pass `learning_type` in its payload
+  when the type is not `fact`), since `log-learning` runs only after this screen. `null` renders
+  as zone `none`; never render `skip` (`set-learning-zones-batch` rejects it).
 
 Render:
 ```
@@ -184,66 +152,43 @@ Letters — BOOST: y / n · GOAL: C completed, S skipped, A abandoned, B blocked
 Item(s) marked "needs input" still need an explicit answer even on Enter.
 ```
 
-**Parsing:** a bare **Enter** (or "y"/"yes") accepts every item that has a default;
-`(needs input)` items always require their own token regardless. Enter alone leaves such a
-goal unanswered, so ask once more with just that goal and the letters (`Goal 1 — C/S/A/B?`);
-never default it. `<N><value>` overrides one item: `y`/`n` for BOOST, a goal status letter
-for GOAL (`C`→`completed`, `S`→`skipped`, `A`→`abandoned`, `B`→`blocked`, the `goal_statuses`
-values; the old `E` had no meaning in the script), a full status word also works; for LEARNING
-items, comma-separated `zone=<x>` / `type=<x>` / `tags=+<tag>` / `tags=-<tag>` /
-`goal=<n|none>` sub-overrides on the same item (e.g. `6:zone=warning,type=procedural`).
+**Parsing:** a bare **Enter** (or "y"/"yes") accepts every item that has a default. Enter alone
+leaves a `(needs input)` goal unanswered, so ask once more with just that goal and the letters
+(`Goal 1 — C/S/A/B?`); never default it. `<N><value>` overrides one item: `y`/`n` for BOOST; a
+status letter for GOAL (`C`→`completed`, `S`→`skipped`, `A`→`abandoned`, `B`→`blocked`, the
+`goal_statuses` values; the old `E` had no meaning in the script; a full status word also works);
+for LEARNING, comma-separated `zone=<x>` / `type=<x>` / `tags=+<tag>` / `tags=-<tag>` /
+`goal=<n|none>` on the same item (e.g. `6:zone=warning,type=procedural`).
 
-**P-GC4 mismatch check on override:** if a GOAL item's override contradicts its
-evidence-based default (default was Completed on shipping evidence, override says
-Abandoned/Blocked), surface once per contradicted item before applying — this is the one
-case the batch does not silently apply, same real-judgment carve-out the old pre-prompt
-cross-check existed for:
-```
-Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]
-```
+**P-GC4 mismatch check:** if a GOAL override contradicts its evidence-based default (default
+Completed on shipping evidence, override Abandoned/Blocked), ask once per such item before
+applying: `Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]`. This is the one
+case the batch does not silently apply.
 
-**Route each family's response exactly as its original step did:**
+**Route each family's response:**
 
-- **BOOST** → do not flush yet. Add every entry confirmed BOOST (after any toggles) to a
-  `pending_boosts` list held for the rest of this close. Step 5/6's DECAY-review boost
-  sub-flow may add more entries to the same list. Flush the whole list in **one**
-  `boost-learnings-batch` call right before Step 6's `close` (2026-08-28 audit finding #3
-  — two separate close-time boost paths used to each flush immediately on their own,
-  where the zone pattern below would have collapsed both into one call):
-  ```bash
-  ~/.claude/skills/compass/scripts/compass.sh boost-learnings-batch <namespace> \
-    '{"learning_ids": ["<learning_id 1>", ...], "texts": ["<exact text, for entries with no id>"]}'
-  ```
-  Use the `learning_id` that `log-learnings-batch` returned for this session's learnings;
-  a prior-session learning from `surface-learnings` or a `suggest-boosts` candidate also
-  carries one. Do not re-send the text. A `suggest-boosts` candidate with `learning_id: null`
-  is a legacy entry: put its `full_text` (the `text` field is cut at 80 characters) in `texts`.
-  Skip this call entirely if `pending_boosts` ends up empty. **Boosting prior learnings
-  (P4):** if this session's work reconfirmed a *prior* learning, add it to this same list
-  too — never call `boost-learning` directly.
+- **BOOST** → do not flush yet. Add each confirmed BOOST to a `pending_boosts` list held for the
+  whole close (Step 5/6's DECAY-review boost sub-flow may add more, and so may a *prior*
+  learning this session reconfirmed (P4); never call `boost-learning` directly). Use the
+  `learning_id` that `log-learnings-batch` (or `surface-learnings` / a `suggest-boosts` candidate)
+  returned, not the text. A candidate with `learning_id: null` is a legacy entry: put its
+  `full_text` (`text` is cut at 80 characters) in `texts`. Flush once, right before `close`:
+  `boost-learnings-batch <namespace> '{"learning_ids": [...], "texts": [...]}'`, or as `close-apply`'s
+  `boosts` key. Skip the call if the list ends up empty.
 
-- **GOAL** → parse into a `goal_statuses` array (e.g. `["completed", "blocked", ...]`).
-  For each goal marked **B**/**A**, immediately follow up (Step 4.1a below) for a reason
-  — that needs new user-supplied content, so it stays a real follow-up, not a bulk default.
+- **GOAL** → build the `goal_statuses` array (e.g. `["completed", "blocked", ...]`). For each goal
+  marked **B**/**A**, follow up at Step 4.1a for a reason: that needs new user content, so it
+  stays a real follow-up.
 
-- **LEARNING** → apply goal_origin / tags / type / zone directly from the (possibly
-  overridden) line. **Rule:** do not build the close payload until every learning has a
-  `goal_origin` value. If the user confirms a zone for a learning already logged this
-  close (or a prior session's), do not call `set-learning-zone` immediately — accumulate
-  `{"text": ..., "zone": ...}` into a `pending_zone_assignments` list held for the rest of
-  this close (Step 5's checklist and Step 6 may both add more entries, e.g. a prior-session
-  learning confirmed via the DECAY sub-flow). Flush the whole list in **one** batched call
-  right before Step 6's `close`:
-  ```bash
-  ~/.claude/skills/compass/scripts/compass.sh set-learning-zones-batch <namespace> \
-    '[{"learning_id": "<id 1>", "zone": "golden"}, {"learning_id": "<id 2>", "zone": "warning"}]'
-  ```
-  This is finding #3 from the 2026-08-27 close-overhead audit — a shell loop over
-  individual `set-learning-zone` calls still forks one subprocess per call even when
-  batched into fewer *tool* calls; one script invocation for the whole close does not.
-  Skip the call entirely if `pending_zone_assignments` ends up empty. For **hypothesis**
-  type learnings, additionally ask confidence (high/medium/low) and test window (N days)
-  as an immediate follow-up — new content, same carve-out as the goal reason capture.
+- **LEARNING** → apply goal_origin / tags / type / zone from the (possibly overridden) line. **Do
+  not build the close payload until every learning has a `goal_origin`.** A zone confirmed for a
+  learning already logged this close (or a prior session's) is not applied immediately: add
+  `{"learning_id": ..., "zone": ...}` to a `pending_zone_assignments` list held for the whole close
+  (Step 5/6 may add more) and flush once, right before `close`:
+  `set-learning-zones-batch <namespace> '[{"learning_id": "<id>", "zone": "golden"}, ...]'`, or as
+  `close-apply`'s `zones` key. Skip it if the list is empty. For **hypothesis** learnings also ask
+  confidence (high/medium/low) and test window (N days) as an immediate follow-up (new content,
+  same carve-out as the goal reason).
 
 ### Step 4.1a — Reason capture for blocked/abandoned goals (P14)
 
@@ -277,48 +222,38 @@ learning-to-goal mapping; hypothesis metadata → validation surfacing.
 
 ## Step 5 — Consolidated close checklist (finding #2 collapse)
 
-The 2026-08-27 close-overhead audit's finding #2: six advisory prompts — boost check
-(now handled at Step 4, which fires as soon as the session's completed work is known,
-before the learnings distilled there feed this step's own eligibility checks) plus
-**CLAUDE.md reflection (P5.1), outcome-link offer (P49), cross-namespace propagation,
-skill-feedback (P52), and retrieval-stale decay review (P58)** — used to fire as five
-*separate* sequential Y/N gates at the tail of every close. All five now share **one**
-compute-then-render pass, so the common case (every goal completed, nothing
-contradictory, no friction to report) costs one screen instead of five round trips. This
-screen still can't merge into Step 4's — its eligibility genuinely depends on Step 4's
-outputs (which goals completed, what got distilled), so it has to render after them.
+One screen replaces what used to be five sequential Y/N gates (2026-08-27 close-overhead audit,
+finding #2): **CLAUDE.md reflection (P5.1), outcome-link offer (P49), cross-namespace
+propagation, skill-feedback (P52), retrieval-stale decay review (P58)**, plus a backlog match. It
+renders after Step 4 because its eligibility depends on Step 4's outputs (completed goals,
+distilled learnings). The common case (all goals completed, nothing contradictory, no friction)
+costs one screen.
 
-**Compute all five silently** (each reuses data already in hand — no full `read`):
+**Compute A–F silently** (each reuses data already in hand; no full `read`):
 
-- **A — CLAUDE.md reflection:** gate on `repo_path` configured AND `CLAUDE.md` exists
-  at that root. If gate passes, scan git commits/completed todos for module-map gaps
-  and this close's distilled learnings for `tooling`/`debugging`-tagged gotchas. **Skip
-  entirely (no signal) if the user already manually updated CLAUDE.md this session**
-  (visible in git diff or mentioned in the note) — do not propose duplicate changes.
-- **B — Outcome-link offer:** eligible if any goal was marked **C** at Step 4.
-  **Outcome links are same-namespace only** — never attempt to link a completed goal
-  to a reality bullet in another namespace, even if the fragment superficially matches.
-- **C — Cross-namespace propagation:** eligible if any distilled learning carries a
-  broad platform tag (architecture, process, tooling, testing, performance,
-  integration, debugging, spring, kafka, redis).
-- **D — Decay review:** from Step 1's `close-context` output — `decay_candidates`
-  (P2.2, unvalidated hypotheses >60 days old), `fact_decay_candidates` (P-GC2,
-  unreinforced weight-1 facts), and `retrieval_stale_candidates` (P58, surfaced often
-  but never reinforced) — all three already fetched, no second call.
-- **E — Skill-feedback:** always eligible, but reconcile first — call
-  `get-skill-feedback <namespace>`, and if any `"status": "open"` entry's fix is
-  already confirmed by this close's reality.md text, `action-skill-feedback` it
-  silently before considering it for the checklist.
-- **F — Backlog match:** call `match-backlog <namespace> '{"context": "<note +
-  completed-items text>"}'`. Key names: `~/.claude/skills/compass/scripts/compass.sh schema match-backlog`. The script
-  saves the result and `close` writes it into the history snapshot (`## Backlog match`),
-  so don't copy candidates into the note. Eligible if `candidates` is non-empty (items this session
-  appended are already left out, in `excluded_same_session` — don't offer those). This catches a
-  gap outcome-linking (item B) can't: B only checks goals *declared* at DECIDE, but a
-  Tactical/Strategic backlog item can also be resolved by ad-hoc work the user asked
-  for mid-session — never a formal goal — which B has no way to see. Without this
-  check, a resolved item (e.g. "blocked on X" after X clears) can sit stale across
-  sessions with nothing to surface it (real gap found 2026-09-15).
+- **A — CLAUDE.md reflection:** gate on `repo_path` configured AND `CLAUDE.md` at that root. If
+  it passes, scan git commits/completed todos for module-map gaps and this close's learnings for
+  `tooling`/`debugging`-tagged gotchas. **Skip entirely if the user already updated CLAUDE.md
+  this session** (git diff or the note): never propose duplicates.
+- **B — Outcome-link offer:** eligible if any goal was marked **C** at Step 4. **Same-namespace
+  only**: never link a completed goal to a reality bullet in another namespace, even on a
+  superficial match.
+- **C — Cross-namespace propagation:** eligible if any distilled learning carries a broad
+  platform tag (architecture, process, tooling, testing, performance, integration, debugging,
+  spring, kafka, redis).
+- **D — Decay review:** from Step 1's `close-context`: `decay_candidates` (P2.2, unvalidated
+  hypotheses >60 days), `fact_decay_candidates` (P-GC2, unreinforced weight-1 facts) and
+  `retrieval_stale_candidates` (P58, surfaced often, never reinforced). No second call.
+- **E — Skill-feedback:** always eligible, but reconcile first: `get-skill-feedback
+  <namespace>`, and `action-skill-feedback` silently any `"status": "open"` entry whose fix this
+  close's reality.md text already confirms.
+- **F — Backlog match:** `match-backlog <namespace> '{"context": "<note + completed-items
+  text>"}'` (keys: `compass.sh schema match-backlog`). The script saves the result and `close`
+  writes it into the history snapshot (`## Backlog match`), so do not copy candidates into the
+  note. Eligible if `candidates` is non-empty; items this session appended are in
+  `excluded_same_session`, so do not offer them. This catches what item B cannot: B sees only
+  goals *declared* at DECIDE, while a backlog item can be resolved by ad-hoc work never made a goal,
+  leaving it stale across sessions (real gap, 2026-09-15).
 
 **If none of A–F have signal:** skip this whole step — no output — proceed to Step 6.
 
@@ -340,38 +275,30 @@ outputs (which goals completed, what got distilled), so it has to render after t
 Accept all defaults, or override by number (e.g. "1n 5:felt slow at step 3")? [Enter to accept all]
 ```
 
-Number only the items actually rendered (skip letters with no signal — e.g. if only
-C and E have signal, show them as 1 and 2). A `match-backlog` response can return more
-than one candidate — render each as its own numbered `[BACKLOG MATCH]` line rather than
-collapsing them, since each needs its own accept/decline.
+Number only the items rendered (with signal only on C and E, show them as 1 and 2). A
+`match-backlog` response can hold several candidates: render each as its own `[BACKLOG MATCH]`
+line, since each needs its own accept/decline.
 
-Map the response:
-- **Enter / "y" / "yes"** → apply every rendered item's default action.
-- **Per-item override** (`"1n"` flips item 1's action to no; `"5:<text>"` supplies
-  FEEDBACK's text directly) → apply the override, defaults for the rest.
+**Enter / "y" / "yes"** applies every rendered item's default. A per-item override (`"1n"` flips
+item 1 to no; `"5:<text>"` supplies FEEDBACK's text) applies that item and defaults the rest.
 
-**Then run each accepted item's full existing sub-flow — this step only collapses the
-gating decision, not the underlying mechanics or script calls:**
+**Then run each accepted item's full existing sub-flow** (this step collapses only the gating
+decision, not the mechanics):
 
 - **CLAUDE.md → Y:** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — CLAUDE.md"` and follow it.
-
 - **OUTCOME → Y:** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — OUTCOME"` and follow it.
-
-- **PROPAGATE → Y:** decide the as-is vs generalised wording **at render time** (above), so
-  the checklist's accept-all is the only confirmation — never a second "use this wording?"
-  turn. `3o` pushes the original wording; `3n` skips. Then load
-  `~/.claude/skills/compass/scripts/compass.sh prompt cross-namespace-propagation --section "Cross-namespace learning propagation"`
-  and follow it (its "From the close checklist" block routes as-is vs generalised and covers
-  the `log-learning global` call; no sub-prompt).
-- **DECAY → "review":** present the batched decay list exactly as Step 6 below
-  describes, collecting Y/N per candidate. `N`/decline-all → skip the
-  `approve-learning-decay` call entirely.
+- **PROPAGATE → Y:** the wording (as-is vs generalised) was decided at render time, so accept-all
+  is the only confirmation, never a second "use this wording?" turn; `3o` pushes the original,
+  `3n` skips. Load `~/.claude/skills/compass/scripts/compass.sh prompt cross-namespace-propagation --section "Cross-namespace learning propagation"`
+  and follow it (its "From the close checklist" block routes as-is vs generalised and says how
+  `close-apply` takes the result as `propagate` items).
+- **DECAY → "review":** present the batched decay list as Step 6 describes, Y/N per candidate;
+  decline-all skips `approve-learning-decay` entirely.
 - **FEEDBACK → Y (or inline text):** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — FEEDBACK"` and follow it.
-
 - **BACKLOG MATCH → Y (per candidate):** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — BACKLOG MATCH"` and follow it.
 
-**Rule:** one screen, one round trip for the fully-nominal case. Per-item drill-in
-only for items the user overrides or that inherently need free text.
+**Rule:** one screen, one round trip for the fully nominal case; drill into an item only when
+the user overrides it or it needs free text.
 
 ---
 
@@ -379,71 +306,71 @@ only for items the user overrides or that inherently need free text.
 
 **Reality rescue (no-todos guard):** if completed todos are empty AND `note` is non-empty, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Reality rescue (no-todos guard)"` and follow it. Otherwise skip.
 
-**Auto-distil:** from completed todos, git log, and any user note, distil **one**
-durable learning automatically — do not present it for approval unless the note
-contains something non-obvious that warrants a check.
+**Auto-distil:** from completed todos, git log and any note, distil **one** durable learning
+automatically; present it for approval only if the note holds something non-obvious.
 
-**History snapshot contract:** the close payload MUST include `completed` and
-`incomplete` arrays from the current todo list state. If the todo list is empty,
-derive `completed` from goals marked **C** at Step 4 instead.
+**History snapshot contract:** the close payload MUST include `completed` and `incomplete` arrays
+from the current todo list state. If the todo list is empty, derive `completed` from the goals
+marked **C** at Step 4.
 
-**Learning decay (P2.2 + P-GC2 + P58):** if Step 5's DECAY item was accepted (or DECAY was the only signal and defaulted through), load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Learning decay review"` and follow it. Otherwise skip.
+**Learning decay (P2.2 + P-GC2 + P58):** if Step 5's DECAY item was accepted (or was the only
+signal and defaulted through), load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Learning decay review"` and follow it. Otherwise skip.
 
-**Corpus health (P10):** if Step 1's `close-context` `corpus_summary_due` is `true`, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Corpus health (P10)"` and follow it. `false` → skip silently.
+**Corpus health (P10):** if `close-context`'s `corpus_summary_due` is `true`, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Corpus health (P10)"` and follow it. `false` → skip silently.
 
-**Default path: one `close-apply` call.** Bundle this close's pending zone assignments, `pending_boosts`, goal outcome links, approved `log-learning global` payloads, reality ops and the close payload as `{zones, boosts, outcomes, propagate, reality_ops, close}` (add `conflicts` and `learnings` if Step 4.5 has not written them yet). It validates the whole bundle first, applies in order, restores the namespace on any failure (`failed_step`, nothing half-applied) and runs reality compaction last. Shapes: `compass.py help close-apply` and `schema close-apply`. When reality_ops is used, `close.reality` must be `""`. Use the separate commands below only for a full-rewrite `update-reality` or a deep close.
+### Default path: one `close-apply` call
 
-**Reality and close:**
+Bundle this close's pending zone assignments, `pending_boosts`, goal outcome links, accepted
+propagations (see the propagation prompt), reality ops and the close payload as `{zones, boosts,
+outcomes, propagate, reality_ops, close}`; add `conflicts` and `learnings` if Step 4.5 has not
+written them yet. It validates the whole bundle first, applies in order, restores the namespace on
+any failure (`failed_step`; nothing half-applied) and runs reality compaction last. Shapes:
+`compass.sh help close-apply` and `schema close-apply`.
 
-`cmd_close`'s payload `reality` field has exactly one no-op case: an empty string.
-Any non-empty value unconditionally overwrites `reality.md`, even if `update-reality`
-was already called separately this close. If reality was already written via a prior
-`update-reality` call, the `close` payload's `reality` field **must** be `""`.
+- **Reality ops:** a pure add or remove is one op; collect this close's BACKLOG MATCH removals and
+  reality-rescue additions into the same `reality_ops`. `close.reality` must then be `""`.
+- **Verify:** `reality.write_verified` lists bullets already stamped on write. Run `verify-reality
+  <namespace> '<JSON array>'` for the rest of `reality.appended_hashes` that correspond to
+  completed-todo-derived bullets promoted to "What exists and works".
+- **Close payload:** key names in `compass.sh schema close` (`_payload`). `close` takes both prompt
+  counts from the `tally-prompt` tally and warns when one looks implausibly high; pass
+  `open_prompt_count`/`close_prompt_count` only as an estimate for a phase you did not tally.
+- **Tally keys:** each time Steps 2–5 show an interactive screen, run `compass.sh tally-prompt
+  <namespace> close <screen>` (`summary`, `batch`, `checklist`, `conflicts`). Repeating a key never
+  double counts, and Step 4's batch is **one**.
 
-Reality edits go through the script, never the file. A pure add or remove → `append-reality-bullet` / `remove-reality-bullet`; two or more edits → one all-or-nothing `reality-bullets-batch`; a full rewrite (rewording or restructuring) → `update-reality`. For the call shapes, the move-keeps-verification rule and the `advisory` field, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Reality write primitives"`. Collect this close's BACKLOG MATCH removals and reality-rescue additions into the same batch.
+### Without `close-apply` (full-rewrite `update-reality`, or a deep close)
 
-Auto-verify the subset of the response's `new_bullet_hashes` that correspond to
-bullets promoted to "What exists and works" this session. Bullets already stamped by
-verify-on-write (the response's `write_verified`) are left out of `new_bullet_hashes`:
+Reality edits always go through the script, never the file. A single add or remove →
+`append-reality-bullet` / `remove-reality-bullet`; two or more → one all-or-nothing
+`reality-bullets-batch`; a full rewrite → `update-reality`. For call shapes, the
+move-keeps-verification rule and the `advisory` field, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Reality write primitives"`.
+Flush pending zones with `set-learning-zones-batch` and `pending_boosts` with
+`boost-learnings-batch` (once each, right before `close`).
+
+`close`'s payload `reality` has exactly one no-op value, `""`; anything else overwrites
+`reality.md`, even after a separate `update-reality`. If reality was already written, it **must** be
+`""`. Auto-verify the response's `new_bullet_hashes` that correspond to bullets promoted to "What
+exists and works" (those in `write_verified` are already stamped and left out):
 ```bash
-~/.claude/skills/compass/scripts/compass.sh verify-reality <namespace> \
-  '<JSON array of new_bullet_hashes for completed-todo-derived bullets>'
+~/.claude/skills/compass/scripts/compass.sh verify-reality <namespace> '<JSON array of new_bullet_hashes>'
 ```
-
-**Prompt-count tally:** each time Steps 2–5 show the user an interactive screen, run
-`compass.py tally-prompt <namespace> close <screen>` with a short key (`summary`, `batch`,
-`checklist`, `conflicts`): repeating a key never double counts, and Step 4's batch is
-**one**, not one per family. `close` takes both counts from the script's tally, so the
-payload needs no prompt counts, and warns when a tally looks implausibly high. Pass
-`open_prompt_count`/`close_prompt_count` only as an estimate for a phase you didn't
-tally; a tally always wins.
-
-Without `close-apply`, close directly:
+Then close, then compact. An unknown payload key comes back in `warnings` as `Unknown close
+payload key`:
 ```bash
 ~/.claude/skills/compass/scripts/compass.sh close <namespace> '<payload_json>'
-```
-`<payload_json>` holds the fields already documented above. For exact key names run
-`compass.py schema close` (its `_payload` block) rather than grepping the script; a key the
-script does not read comes back as an `Unknown close payload key` entry in `warnings`.
-
-**Reality compaction (archiving cadence, docs/reality-compaction-cadence-design.md in
-the `compass` skill):** `close-apply` already ran it; otherwise always call this — it checks its own due-ness internally and is
-a silent no-op most sessions. Run this LAST, after `close` itself, since `close` is the
-last thing that can rewrite `reality.md` (the payload's `reality` field, `update-reality`,
-`verify-reality` all run earlier in this step) — running compaction any earlier risks a
-later full-document reality write restoring bullets compaction just archived:
-```bash
 ~/.claude/skills/compass/scripts/compass.sh run-reality-compaction <namespace>
 ```
-If `archived > 0`, surface one line: `📦 Archived <N> long-verified bullet(s) to
-reality_archive.md.` If `archived: 0`, say nothing — this is not a cadence worth a
-prompt or an explanation when it doesn't fire.
+Run compaction **last**: `close` is the last thing that can rewrite `reality.md`, and compacting
+earlier risks a later full-document write restoring bullets it just archived. It is a silent no-op
+most sessions (checks its own due-ness).
 
-The response includes `close_duration_seconds`/`close_command_count` when
-`mark-close-start` ran at Step 1 (it always does, in this sub-skill) — no action
-needed, this is what a future overhead audit reads instead of hand-tallying. It also
-echoes `open_prompt_count`/`close_prompt_count`, with `prompt_count_sources` saying
-whether each came from the tally or the payload.
+### After the close call
+
+If `compaction.archived` (close-apply) or `archived` (run-reality-compaction) is above 0, say
+`📦 Archived <N> long-verified bullet(s) to reality_archive.md.`; at 0 say nothing. The response
+includes `close_duration_seconds`/`close_command_count` (`mark-close-start` ran at Step 1) and the
+`open_prompt_count`/`close_prompt_count` with `prompt_count_sources` (tally or payload): no action.
 
 ---
 
