@@ -180,12 +180,16 @@ Render:
   ...
 
 Accept all defaults, or override by number (e.g. "3n" / "4:blocked" / "5:zone=warning" / "6:tags=+debugging")?
+Letters — BOOST: y / n · GOAL: C completed, S skipped, A abandoned, B blocked.
 Item(s) marked "needs input" still need an explicit answer even on Enter.
 ```
 
 **Parsing:** a bare **Enter** (or "y"/"yes") accepts every item that has a default;
-`(needs input)` items always require their own token regardless. `<N><value>` overrides
-one item: a status letter (`n`, `C`, `A`, `B`, `E`) for BOOST/GOAL items; for LEARNING
+`(needs input)` items always require their own token regardless. Enter alone leaves such a
+goal unanswered, so ask once more with just that goal and the letters (`Goal 1 — C/S/A/B?`);
+never default it. `<N><value>` overrides one item: `y`/`n` for BOOST, a goal status letter
+for GOAL (`C`→`completed`, `S`→`skipped`, `A`→`abandoned`, `B`→`blocked`, the `goal_statuses`
+values; the old `E` had no meaning in the script), a full status word also works; for LEARNING
 items, comma-separated `zone=<x>` / `type=<x>` / `tags=+<tag>` / `tags=-<tag>` /
 `goal=<n|none>` sub-overrides on the same item (e.g. `6:zone=warning,type=procedural`).
 
