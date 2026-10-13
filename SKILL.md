@@ -38,9 +38,9 @@ zone/decay decisions, and learnings.
 
 Run silently, in this order:
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py mark-close-start <namespace>
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py close-context <namespace>
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py gitlog <namespace>
+~/.claude/skills/compass/scripts/compass.sh mark-close-start <namespace>
+~/.claude/skills/compass/scripts/compass.sh close-context <namespace>
+~/.claude/skills/compass/scripts/compass.sh gitlog <namespace>
 ```
 
 `mark-close-start` stamps `close_phase_started_at`/resets `close_phase_command_count` —
@@ -49,7 +49,7 @@ so the close response reports its own `close_duration_seconds`/`close_command_co
 (2026-08-27 close-overhead audit finding #6) without a hand transcript-tally.
 
 `close-context` replaces the old `read` call (for exact key names, run
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py schema close-context`) — it returns `planned_actions`,
+`~/.claude/skills/compass/scripts/compass.sh schema close-context`) — it returns `planned_actions`,
 `reality_validation` (hashes), `session_appended_bullets` (`{hash, text, section}` for
 bullets appended this session), `goal_contracts`, `decay_candidates` (P2.2),
 `fact_decay_candidates` (P-GC2), `retrieval_stale_candidates` (P58), and
@@ -89,7 +89,7 @@ If `note` is empty AND the todo list shows no completed items, prompt once: "Not
 
 ## Step 2.1 — Artefact capture offer (P41)
 
-Run after the compact summary, before code context. Trigger if **either**: A) the note or completed todos contain "diagram", "chart", "widget", "SVG", "visual", "dashboard" or "panel"; B) (`compass-dashboard` namespace only) `~/Downloads/compass-dashboard.html` was modified after `last_open`. Neither → skip, no prompt. Otherwise load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 2.1 — Artefact capture offer (P41)"` and follow it.
+Run after the compact summary, before code context. Trigger if **either**: A) the note or completed todos contain "diagram", "chart", "widget", "SVG", "visual", "dashboard" or "panel"; B) (`compass-dashboard` namespace only) `~/Downloads/compass-dashboard.html` was modified after `last_open`. Neither → skip, no prompt. Otherwise load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 2.1 — Artefact capture offer (P41)"` and follow it.
 
 ---
 
@@ -200,7 +200,7 @@ Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]
   — two separate close-time boost paths used to each flush immediately on their own,
   where the zone pattern below would have collapsed both into one call):
   ```bash
-  /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py boost-learnings-batch <namespace> \
+  ~/.claude/skills/compass/scripts/compass.sh boost-learnings-batch <namespace> \
     '{"learning_ids": ["<learning_id 1>", ...], "texts": ["<exact text, for entries with no id>"]}'
   ```
   Use the `learning_id` that `log-learnings-batch` returned for this session's learnings;
@@ -224,7 +224,7 @@ Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]
   learning confirmed via the DECAY sub-flow). Flush the whole list in **one** batched call
   right before Step 6's `close`:
   ```bash
-  /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py set-learning-zones-batch <namespace> \
+  ~/.claude/skills/compass/scripts/compass.sh set-learning-zones-batch <namespace> \
     '[{"learning_id": "<id 1>", "zone": "golden"}, {"learning_id": "<id 2>", "zone": "warning"}]'
   ```
   This is finding #3 from the 2026-08-27 close-overhead audit — a shell loop over
@@ -236,23 +236,23 @@ Reality/git shows "<goal text>" shipped — still mark <status>? [Y/n]
 
 ### Step 4.1a — Reason capture for blocked/abandoned goals (P14)
 
-For each goal marked **B** or **A** at Step 4, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 4.1a — Reason capture for blocked/abandoned goals (P14)"` and follow it. No B/A goals → skip.
+For each goal marked **B** or **A** at Step 4, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 4.1a — Reason capture for blocked/abandoned goals (P14)"` and follow it. No B/A goals → skip.
 
 ### Step 4.1c — Verification contract scoring (P55)
 
-If `goal_contracts` in Step 1's `close-context` output holds a contract for any completed goal, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 4.1c — Verification contract scoring (P55)"` and follow it. Otherwise skip silently.
+If `goal_contracts` in Step 1's `close-context` output holds a contract for any completed goal, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 4.1c — Verification contract scoring (P55)"` and follow it. Otherwise skip silently.
 
 ### Step 4.5 — Cross-namespace learning conflicts (P2.1) — mandatory
 
 Must run before the close payload is built:
 
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py log-learnings-batch <namespace> \
+~/.claude/skills/compass/scripts/compass.sh log-learnings-batch <namespace> \
   '[{"text": "<learning text 1>", "tags": [...], "reconcile": true},
     {"text": "<learning text 2>", "tags": [...], "reconcile": true}]'
 ```
 
-Walk the returned `results` in order (matched by `text`) and keep each `learning_id`: zone and boost batches take it in place of the full text. An `ok: true` result with no `reconciliation_action` is already recorded — pass `"learnings": []` in the close payload for it. If any result carries `reconciliation_action: "pending"`, a `contradiction_candidate`, or `require_conflict_resolution: true`, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 4.5 — Result handling (reconciliation, contradiction, cross-namespace conflict)"` and follow it.
+Walk the returned `results` in order (matched by `text`) and keep each `learning_id`: zone and boost batches take it in place of the full text. An `ok: true` result with no `reconciliation_action` is already recorded — pass `"learnings": []` in the close payload for it. If any result carries `reconciliation_action: "pending"`, a `contradiction_candidate`, or `require_conflict_resolution: true`, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 4.5 — Result handling (reconciliation, contradiction, cross-namespace conflict)"` and follow it.
 
 ### Step 4.6 — Intent change reason (P1.2)
 
@@ -299,7 +299,7 @@ outputs (which goals completed, what got distilled), so it has to render after t
   already confirmed by this close's reality.md text, `action-skill-feedback` it
   silently before considering it for the checklist.
 - **F — Backlog match:** call `match-backlog <namespace> '{"context": "<note +
-  completed-items text>"}'`. Key names: `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py schema match-backlog`. The script
+  completed-items text>"}'`. Key names: `~/.claude/skills/compass/scripts/compass.sh schema match-backlog`. The script
   saves the result and `close` writes it into the history snapshot (`## Backlog match`),
   so don't copy candidates into the note. Eligible if `candidates` is non-empty (items this session
   appended are already left out, in `excluded_same_session` — don't offer those). This catches a
@@ -342,22 +342,22 @@ Map the response:
 **Then run each accepted item's full existing sub-flow — this step only collapses the
 gating decision, not the underlying mechanics or script calls:**
 
-- **CLAUDE.md → Y:** load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 5 item — CLAUDE.md"` and follow it.
+- **CLAUDE.md → Y:** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — CLAUDE.md"` and follow it.
 
-- **OUTCOME → Y:** load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 5 item — OUTCOME"` and follow it.
+- **OUTCOME → Y:** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — OUTCOME"` and follow it.
 
 - **PROPAGATE → Y:** decide the as-is vs generalised wording **at render time** (above), so
   the checklist's accept-all is the only confirmation — never a second "use this wording?"
   turn. `3o` pushes the original wording; `3n` skips. Then load
-  `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt cross-namespace-propagation --section "Cross-namespace learning propagation"`
+  `~/.claude/skills/compass/scripts/compass.sh prompt cross-namespace-propagation --section "Cross-namespace learning propagation"`
   and follow it (its "From the close checklist" block routes as-is vs generalised and covers
   the `log-learning global` call; no sub-prompt).
 - **DECAY → "review":** present the batched decay list exactly as Step 6 below
   describes, collecting Y/N per candidate. `N`/decline-all → skip the
   `approve-learning-decay` call entirely.
-- **FEEDBACK → Y (or inline text):** load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 5 item — FEEDBACK"` and follow it.
+- **FEEDBACK → Y (or inline text):** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — FEEDBACK"` and follow it.
 
-- **BACKLOG MATCH → Y (per candidate):** load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 5 item — BACKLOG MATCH"` and follow it.
+- **BACKLOG MATCH → Y (per candidate):** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — BACKLOG MATCH"` and follow it.
 
 **Rule:** one screen, one round trip for the fully-nominal case. Per-item drill-in
 only for items the user overrides or that inherently need free text.
@@ -366,7 +366,7 @@ only for items the user overrides or that inherently need free text.
 
 ## Step 6 — Auto-distil, decay, corpus health, reality, and close
 
-**Reality rescue (no-todos guard):** if completed todos are empty AND `note` is non-empty, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 6 — Reality rescue (no-todos guard)"` and follow it. Otherwise skip.
+**Reality rescue (no-todos guard):** if completed todos are empty AND `note` is non-empty, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Reality rescue (no-todos guard)"` and follow it. Otherwise skip.
 
 **Auto-distil:** from completed todos, git log, and any user note, distil **one**
 durable learning automatically — do not present it for approval unless the note
@@ -376,9 +376,9 @@ contains something non-obvious that warrants a check.
 `incomplete` arrays from the current todo list state. If the todo list is empty,
 derive `completed` from goals marked **C** at Step 4 instead.
 
-**Learning decay (P2.2 + P-GC2 + P58):** if Step 5's DECAY item was accepted (or DECAY was the only signal and defaulted through), load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 6 — Learning decay review"` and follow it. Otherwise skip.
+**Learning decay (P2.2 + P-GC2 + P58):** if Step 5's DECAY item was accepted (or DECAY was the only signal and defaulted through), load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Learning decay review"` and follow it. Otherwise skip.
 
-**Corpus health (P10):** if Step 1's `close-context` `corpus_summary_due` is `true`, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 6 — Corpus health (P10)"` and follow it. `false` → skip silently.
+**Corpus health (P10):** if Step 1's `close-context` `corpus_summary_due` is `true`, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Corpus health (P10)"` and follow it. `false` → skip silently.
 
 **Flush pending zone assignments** (Step 4) via `set-learning-zones-batch` now, if
 the list is non-empty and hasn't been flushed yet.
@@ -393,13 +393,13 @@ Any non-empty value unconditionally overwrites `reality.md`, even if `update-rea
 was already called separately this close. If reality was already written via a prior
 `update-reality` call, the `close` payload's `reality` field **must** be `""`.
 
-Reality edits go through the script, never the file. A pure add or remove → `append-reality-bullet` / `remove-reality-bullet`; two or more edits → one all-or-nothing `reality-bullets-batch`; a full rewrite (rewording or restructuring) → `update-reality`. For the call shapes, the move-keeps-verification rule and the `advisory` field, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt close-conditional-flows --section "Step 6 — Reality write primitives"`. Collect this close's BACKLOG MATCH removals and reality-rescue additions into the same batch.
+Reality edits go through the script, never the file. A pure add or remove → `append-reality-bullet` / `remove-reality-bullet`; two or more edits → one all-or-nothing `reality-bullets-batch`; a full rewrite (rewording or restructuring) → `update-reality`. For the call shapes, the move-keeps-verification rule and the `advisory` field, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Reality write primitives"`. Collect this close's BACKLOG MATCH removals and reality-rescue additions into the same batch.
 
 Auto-verify the subset of the response's `new_bullet_hashes` that correspond to
 bullets promoted to "What exists and works" this session. Bullets already stamped by
 verify-on-write (the response's `write_verified`) are left out of `new_bullet_hashes`:
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py verify-reality <namespace> \
+~/.claude/skills/compass/scripts/compass.sh verify-reality <namespace> \
   '<JSON array of new_bullet_hashes for completed-todo-derived bullets>'
 ```
 
@@ -413,7 +413,7 @@ tally; a tally always wins.
 
 Then close:
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py close <namespace> '<payload_json>'
+~/.claude/skills/compass/scripts/compass.sh close <namespace> '<payload_json>'
 ```
 `<payload_json>` holds the fields already documented above. For exact key names run
 `compass.py schema close` (its `_payload` block) rather than grepping the script; a key the
@@ -426,7 +426,7 @@ last thing that can rewrite `reality.md` (the payload's `reality` field, `update
 `verify-reality` all run earlier in this step) — running compaction any earlier risks a
 later full-document reality write restoring bullets compaction just archived:
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py run-reality-compaction <namespace>
+~/.claude/skills/compass/scripts/compass.sh run-reality-compaction <namespace>
 ```
 If `archived > 0`, surface one line: `📦 Archived <N> long-verified bullet(s) to
 reality_archive.md.` If `archived: 0`, say nothing — this is not a cadence worth a
@@ -446,11 +446,11 @@ Run, in order, exactly as the parent's sections document them (not duplicated he
 same files, same triggers):
 
 1. **Skill patch check** — load the section with
-   `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt router-sections --section "Skill patch check"`
+   `~/.claude/skills/compass/scripts/compass.sh prompt router-sections --section "Skill patch check"`
    and follow it.
 2. **Close-time skill harvesting** (complexity trigger) — if the complexity trigger
    fires, load the section with
-   `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt skill-opportunity-detection --section "Close-time: skill harvesting"`
+   `~/.claude/skills/compass/scripts/compass.sh prompt skill-opportunity-detection --section "Close-time: skill harvesting"`
    and follow it.
 
 (Cross-namespace propagation already ran, if eligible, inside Step 5's checklist —
