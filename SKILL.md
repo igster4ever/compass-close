@@ -380,11 +380,7 @@ derive `completed` from goals marked **C** at Step 4 instead.
 
 **Corpus health (P10):** if Step 1's `close-context` `corpus_summary_due` is `true`, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Corpus health (P10)"` and follow it. `false` → skip silently.
 
-**Flush pending zone assignments** (Step 4) via `set-learning-zones-batch` now, if
-the list is non-empty and hasn't been flushed yet.
-
-**Flush pending boosts** (Step 4) via `boost-learnings-batch` now, if
-`pending_boosts` is non-empty and hasn't been flushed yet.
+**Default path: one `close-apply` call.** Bundle this close's pending zone assignments, `pending_boosts`, goal outcome links, approved `log-learning global` payloads, reality ops and the close payload as `{zones, boosts, outcomes, propagate, reality_ops, close}` (add `conflicts` and `learnings` if Step 4.5 has not written them yet). It validates the whole bundle first, applies in order, restores the namespace on any failure (`failed_step`, nothing half-applied) and runs reality compaction last. Shapes: `compass.py help close-apply` and `schema close-apply`. When reality_ops is used, `close.reality` must be `""`. Use the separate commands below only for a full-rewrite `update-reality` or a deep close.
 
 **Reality and close:**
 
@@ -411,7 +407,7 @@ payload needs no prompt counts, and warns when a tally looks implausibly high. P
 `open_prompt_count`/`close_prompt_count` only as an estimate for a phase you didn't
 tally; a tally always wins.
 
-Then close:
+Without `close-apply`, close directly:
 ```bash
 ~/.claude/skills/compass/scripts/compass.sh close <namespace> '<payload_json>'
 ```
@@ -420,7 +416,7 @@ Then close:
 script does not read comes back as an `Unknown close payload key` entry in `warnings`.
 
 **Reality compaction (archiving cadence, docs/reality-compaction-cadence-design.md in
-the `compass` skill):** always call this — it checks its own due-ness internally and is
+the `compass` skill):** `close-apply` already ran it; otherwise always call this — it checks its own due-ness internally and is
 a silent no-op most sessions. Run this LAST, after `close` itself, since `close` is the
 last thing that can rewrite `reality.md` (the payload's `reality` field, `update-reality`,
 `verify-reality` all run earlier in this step) — running compaction any earlier risks a
