@@ -107,8 +107,15 @@ structured micro-handoff block and write it without prompting:
 **Tried and discarded:** <if note mentions a pivot, blocker, or abandoned approach>
 ```
 
-Overwrite `~/.claude/loop/<namespace>/code_context.md` with this content. Omit the
-"Tried and discarded" line if nothing in the note suggests a rejected approach.
+Omit the "Tried and discarded" line if nothing in the note suggests a rejected approach.
+
+Write every `code_context.md` (here and below) with the script, never the Write tool (it fails
+on an existing file that was not Read first). Pipe the content on stdin, or pass `--file <path>`:
+```bash
+~/.claude/skills/compass/scripts/compass.sh write-code-context <namespace> <<'EOF'
+<block>
+EOF
+```
 
 **When no git commits exist this session:**
 
@@ -116,7 +123,7 @@ If `code_context.md` already exists for this namespace, ask once:
 ```
 💻 Code context — update for next session? (active files, decisions in flight, next entry point — or skip)
 ```
-Accept free text; overwrite with `Last updated: <date>` header + their response.
+Accept free text; write it with a `Last updated: <date>` header + their response.
 If empty / "skip" / enter, leave unchanged.
 
 If `code_context.md` does not exist and the session note describes substantive work,
