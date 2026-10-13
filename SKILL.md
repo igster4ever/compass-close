@@ -328,7 +328,8 @@ any failure (`failed_step`; nothing half-applied) and runs reality compaction la
 `compass.sh help close-apply` and `schema close-apply`.
 
 - **Reality ops:** a pure add or remove is one op; collect this close's BACKLOG MATCH removals and
-  reality-rescue additions into the same `reality_ops`. `close.reality` must then be `""`.
+  reality-rescue additions into the same `reality_ops`. `close.reality` must then be `""`. `outcomes` apply
+  after `reality_ops`, so they can link the bullets the same bundle appends.
 - **Verify:** `reality.write_verified` lists bullets already stamped on write. Run `verify-reality
   <namespace> '<JSON array>'` for the rest of `reality.appended_hashes` that correspond to
   completed-todo-derived bullets promoted to "What exists and works".
