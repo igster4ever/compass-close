@@ -289,9 +289,9 @@ decision, not the mechanics):
 - **OUTCOME → Y:** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — OUTCOME"` and follow it.
 - **PROPAGATE → Y:** the wording (as-is vs generalised) was decided at render time, so accept-all
   is the only confirmation, never a second "use this wording?" turn; `3o` pushes the original,
-  `3n` skips. Load `~/.claude/skills/compass/scripts/compass.sh prompt cross-namespace-propagation --section "Cross-namespace learning propagation"`
-  and follow it (its "From the close checklist" block routes as-is vs generalised and says how
-  `close-apply` takes the result as `propagate` items).
+  `3n` skips. Load `~/.claude/skills/compass/scripts/compass.sh prompt cross-namespace-propagation --section "From the close checklist"`
+  and `--section "With close-apply"` (as-is vs generalised routing, then the `propagate` item shapes);
+  the "Deep-close prompt" section is not needed here.
 - **DECAY → "review":** present the batched decay list as Step 6 describes, Y/N per candidate;
   decline-all skips `approve-learning-decay` entirely.
 - **FEEDBACK → Y (or inline text):** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — FEEDBACK"` and follow it.
