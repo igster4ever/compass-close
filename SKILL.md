@@ -20,17 +20,20 @@ code context, batched zone/decay decisions and learnings.
 
 ## Step 1 — Mark close start + narrow snapshot (no pause)
 
-Run silently, in this order:
+Run silently, one call, with the draft session context (note + completed items joined):
 ```bash
-~/.claude/skills/compass/scripts/compass.sh mark-close-start <namespace>
-~/.claude/skills/compass/scripts/compass.sh close-context <namespace>
-~/.claude/skills/compass/scripts/compass.sh gitlog <namespace>
+~/.claude/skills/compass/scripts/compass.sh close-prepare <namespace> '{"context": "<note + completed items>"}'
 ```
 
-`mark-close-start` stamps `close_phase_started_at` and resets `close_phase_command_count`, so
-the close response reports `close_duration_seconds`/`close_command_count` without a hand tally.
+`close-prepare` replaces `mark-close-start`, `close-context`, `gitlog`, `get-skill-feedback`,
+`match-backlog` and `suggest-boosts` (keys: `compass.sh schema close-prepare`). It stamps
+`close_phase_started_at` and resets `close_phase_command_count` (so the close response reports
+`close_duration_seconds`/`close_command_count` without a hand tally), and returns `close_context`,
+`gitlog`, `skill_feedback`, `backlog_match` and `boost_candidates`. A part that failed is listed
+under `errors` with a null key: run that command by hand. If the final note differs a lot from
+the draft context, re-run `suggest-boosts` / `match-backlog` with the final text.
 
-`close-context` returns only the slices this close needs (key names: `compass.sh schema
+`close_context` holds only the slices this close needs (key names: `compass.sh schema
 close-context`): `planned_actions`, `reality_validation` (hashes), `session_appended_bullets`
 (`{hash, text, section}`), `goal_contracts`, `decay_candidates` (P2.2), `fact_decay_candidates`
 (P-GC2), `retrieval_stale_candidates` (P58) and `corpus_summary_due`. Hold them: Step 4.1c uses
@@ -72,7 +75,7 @@ Run after the compact summary, before code context. Trigger if **either**: A) th
 
 ## Step 3 — Code context update
 
-**When git commits exist this session** (from Step 1 gitlog output), auto-synthesise a
+**When git commits exist this session** (from Step 1's `gitlog`), auto-synthesise a
 structured micro-handoff block and write it without prompting:
 
 ```
@@ -120,8 +123,8 @@ depends on another, so they render together.
 
 **4.0 — Compute every default silently first:**
 
-- **Boost candidates (R5):** run `suggest-boosts` with the session context (note + completed
-  items joined, `min_overlap: 2`, `max_results: 3`); no `candidates` → no BOOST lines. Per
+- **Boost candidates (R5):** use Step 1's `boost_candidates` (`suggest-boosts` defaults:
+  `min_overlap: 2`, `max_results: 3`); no `candidates` → no BOOST lines. Per
   candidate, judge **boost** (the session directly reinforced or depended on it) vs **skip**
   (incidental keyword overlap), with a one-clause rationale.
 - **Goal completion defaults (P0.3 + P-GC4):** per planned goal, check the todo state (or
@@ -244,11 +247,10 @@ costs one screen.
 - **D — Decay review:** from Step 1's `close-context`: `decay_candidates` (P2.2, unvalidated
   hypotheses >60 days), `fact_decay_candidates` (P-GC2, unreinforced weight-1 facts) and
   `retrieval_stale_candidates` (P58, surfaced often, never reinforced). No second call.
-- **E — Skill-feedback:** always eligible, but reconcile first: `get-skill-feedback
-  <namespace>`, and `action-skill-feedback` silently any `"status": "open"` entry whose fix this
+- **E — Skill-feedback:** always eligible, but reconcile first: Step 1's
+  `skill_feedback`, and `action-skill-feedback` silently any `"status": "open"` entry whose fix this
   close's reality.md text already confirms.
-- **F — Backlog match:** `match-backlog <namespace> '{"context": "<note + completed-items
-  text>"}'` (keys: `compass.sh schema match-backlog`). The script saves the result and `close`
+- **F — Backlog match:** Step 1's `backlog_match` (keys: `compass.sh schema match-backlog`). The script saves the result and `close`
   writes it into the history snapshot (`## Backlog match`), so do not copy candidates into the
   note. Eligible if `candidates` is non-empty; items this session appended are in
   `excluded_same_session`, so do not offer them. This catches what item B cannot: B sees only
@@ -370,7 +372,7 @@ most sessions (checks its own due-ness).
 
 If `compaction.archived` (close-apply) or `archived` (run-reality-compaction) is above 0, say
 `📦 Archived <N> long-verified bullet(s) to reality_archive.md.`; at 0 say nothing. The response
-includes `close_duration_seconds`/`close_command_count` (`mark-close-start` ran at Step 1) and the
+includes `close_duration_seconds`/`close_command_count` (`close-prepare` ran at Step 1) and the
 `open_prompt_count`/`close_prompt_count` with `prompt_count_sources` (tally or payload): no action.
 
 ---
