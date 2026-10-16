@@ -29,7 +29,7 @@ Run silently, one call, with the draft session context (note + completed items j
 `match-backlog` and `suggest-boosts` (keys: `compass.sh schema close-prepare`). It stamps
 `close_phase_started_at` and resets `close_phase_command_count` (so the close response reports
 `close_duration_seconds`/`close_command_count` without a hand tally), and returns `close_context`,
-`gitlog`, `skill_feedback`, `backlog_match` and `boost_candidates`. A part that failed is listed
+`gitlog`, `skill_feedback`, `backlog_match`, `boost_candidates` and `skipped_gates`. A part that failed is listed
 under `errors` with a null key: run that command by hand. If the final note differs a lot from
 the draft context, re-run `suggest-boosts` / `match-backlog` with the final text.
 
@@ -57,6 +57,7 @@ Present as a tight table, not prose:
 ✅ Done:      <completed todo items, comma-separated — "none" if empty>
 ⏸ Skipped:   <pending items — "none" if all done>
 🔀 Git:       <N commit(s) since open — or "none">
+⏭ Gates:     <skipped_gates: "research (+4 overdue, deferred 2×), dream (+1 overdue)" — omit the line when empty>
 
 Anything to add? (Enter to skip)
 ```
