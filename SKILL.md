@@ -65,6 +65,13 @@ Wait for one response. Capture as `note`. Empty / "skip" / enter = `note = ""`.
 
 If `note` is empty AND the todo list shows no completed items, prompt once: "Nothing recorded this session — confirm close? [Y/n]" before proceeding.
 
+**One screen with Step 4 (default):** when the session is open and nothing needs free text first —
+no `(needs input)` goal, and not the "Nothing recorded" case above — compute Step 4.0, then show
+this table and Step 4's batch together. Replace the "Anything to add?" line with the batch's
+last line, extended: `or "note: <text>" to add a note (Enter accepts all defaults, empty note)`.
+Overrides come first, the note after `note:`. Tally one `batch` screen, no `summary`. Keep the two
+screens (this one, then Step 4) otherwise.
+
 ---
 
 ## Step 2.1 — Artefact capture offer (P41)
@@ -116,7 +123,8 @@ offer to create it:
 
 ## Step 4 — Consolidated close batch (v1 consolidation, 2026-09-01)
 
-If the session is open (`planned_actions` from Step 1's `close-context`), build one screen
+If the session is open (`planned_actions` from Step 1's `close-context`), build one screen (shared
+with Step 2's table by default, see there)
 covering the boost check (R5), goal completion status (P0.3) and the per-learning goal-mapping
 (P0.2) / tag suggestions (P4.1) / type-and-zone classification (P6, P1.1, P56). None of the four
 depends on another, so they render together.
