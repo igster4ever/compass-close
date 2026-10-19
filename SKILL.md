@@ -349,10 +349,13 @@ any failure (`failed_step`; nothing half-applied) and runs reality compaction la
 - **Close payload:** key names in `compass.sh schema close` (`_payload`). `close` takes both prompt
   counts from the `tally-prompt` tally and warns when one looks implausibly high; pass
   `open_prompt_count`/`close_prompt_count` only as an estimate for a phase you did not tally.
-- **Tally keys:** note each interactive screen Steps 2–5 show (`summary`, `batch`, `checklist`,
-  `conflicts`) and pass them as the bundle's `screens` list; `close-apply` tallies them before
-  `close`. Outside `close-apply`, run `compass.sh tally-prompt <namespace> close <a>,<b>`. Repeating
-  a key never double counts, and Step 4's batch is **one**.
+- **Tally keys:** note each interactive screen Steps 2–5 show (`summary`, `artefact`, `batch`,
+  `reason`, `contract`, `conflicts`, `intent`, `checklist`; any other key is refused) and pass
+  them as the bundle's `screens` list; `close-apply` tallies them before `close`. Pass
+  `"screens": []` when no screen waited for a response (a fully defaulted fast close): that
+  records `close_prompt_count` 0 rather than a warning. Outside `close-apply`, run `compass.sh
+  tally-prompt <namespace> close <a>,<b>` (or `none`). Repeating a key never double counts, and
+  Step 4's batch is **one**.
 
 ### Without `close-apply` (full-rewrite `update-reality`, or a deep close)
 
