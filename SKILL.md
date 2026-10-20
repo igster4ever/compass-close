@@ -359,29 +359,10 @@ any failure (`failed_step`; nothing half-applied) and runs reality compaction la
 
 ### Without `close-apply` (full-rewrite `update-reality`, or a deep close)
 
-Reality edits always go through the script, never the file. A single add or remove →
-`append-reality-bullet` / `remove-reality-bullet`; two or more → one all-or-nothing
-`reality-bullets-batch`; a full rewrite → `update-reality`. For call shapes, the
-move-keeps-verification rule and the `advisory` field, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Reality write primitives"`.
-Flush pending zones with `set-learning-zones-batch` and `pending_boosts` with
-`boost-learnings-batch` (once each, right before `close`).
-
-`close`'s payload `reality` has exactly one no-op value, `""`; anything else overwrites
-`reality.md`, even after a separate `update-reality`. If reality was already written, it **must** be
-`""`. Auto-verify the response's `new_bullet_hashes` that correspond to bullets promoted to "What
-exists and works" (those in `write_verified` are already stamped and left out):
-```bash
-~/.claude/skills/compass/scripts/compass.sh verify-reality <namespace> '<JSON array of new_bullet_hashes>'
-```
-Then close, then compact. An unknown payload key comes back in `warnings` as `Unknown close
-payload key`:
-```bash
-~/.claude/skills/compass/scripts/compass.sh close <namespace> '<payload_json>'
-~/.claude/skills/compass/scripts/compass.sh run-reality-compaction <namespace>
-```
-Run compaction **last**: `close` is the last thing that can rewrite `reality.md`, and compacting
-earlier risks a later full-document write restoring bullets it just archived. It is a silent no-op
-most sessions (checks its own due-ness).
+Load
+`~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Close without close-apply"`
+and follow it: script-only reality writes, the flushes, `reality: ""`, verify, `close`, then
+compaction last.
 
 ### After the close call
 
