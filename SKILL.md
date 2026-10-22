@@ -190,7 +190,8 @@ case the batch does not silently apply.
 
 - **GOAL** → build the `goal_statuses` array (e.g. `["completed", "blocked", ...]`). For each goal
   marked **B**/**A**, follow up at Step 4.1a for a reason: that needs new user content, so it
-  stays a real follow-up.
+  stays a real follow-up. Omit `goal_types`: close uses the ones `open` stored. Pass it only if
+  the user re-tagged a goal mid-session.
 
 - **LEARNING** → apply goal_origin / tags / type / zone from the (possibly overridden) line. **Do
   not build the close payload until every learning has a `goal_origin`.** A zone confirmed for a
