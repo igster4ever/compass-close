@@ -49,7 +49,10 @@ TodoWrite tool at all, 2026-09-02).
 
 ## Step 2 — Compact summary + single question
 
-Present as a tight table, not prose:
+Present as a tight table, not prose. Step 1's `brief_markdown` already renders these lines
+(done/skipped from `goal_progress`, git, gates, plus feedback and errors lines) followed by
+the boost and backlog candidates Step 4 needs: show its table lines as they are, under the header,
+instead of digesting the raw JSON. If a host todo tool disagrees with `goal_progress`, the todo tool wins.
 
 ```
 ## 🔄 Compass — <namespace> · fast close
