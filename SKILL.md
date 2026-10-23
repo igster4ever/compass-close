@@ -279,9 +279,10 @@ costs one screen.
 
   1. [CLAUDE.md]      <N> candidate update(s) detected → apply? (default: yes)
   2. [OUTCOME]         <N> goal(s) completed → link to reality bullets? (default: yes)
-  3. [PROPAGATE]       "<learning, condensed>" tagged `<tag>` → push to global as-is? (default: yes)
-                       — or, when the wording names modules/paths/services/skills:
-                       → push to global as: "<generalised wording>"  [3o = original wording]
+  3. [PROPAGATE]       "<learning, full text>" tagged `<tag>` → push to global as-is? (default: yes)
+                       — or, when the wording names modules/paths/services/skills, or is too
+                       long to show whole:
+                       → push to global as: "<generalised or condensed wording>"  [3o = original wording]
   4. [DECAY]           <N> decay/retrieval-stale candidate(s) → review for discard? (default: review)
   5. [FEEDBACK]        any protocol friction to log? (default: no)
   6. [BACKLOG MATCH]   "<item text, condensed>" ([tactical|strategic]) looks resolved by
