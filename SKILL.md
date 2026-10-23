@@ -224,7 +224,7 @@ Must run before the close payload is built:
     {"text": "<learning text 2>", "tags": [...], "reconcile": true}]'
 ```
 
-Walk the returned `results` in order (matched by `text`) and keep each `learning_id`: zone and boost batches take it in place of the full text. An `ok: true` result with no `reconciliation_action` is already recorded — pass `"learnings": []` in the close payload for it. If any result carries `reconciliation_action: "pending"`, a `contradiction_candidate`, or `require_conflict_resolution: true`, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 4.5 — Result handling (reconciliation, contradiction, cross-namespace conflict)"` and follow it.
+Walk the returned `results` in order (matched by `text`) and keep each `learning_id`: zone and boost batches take it in place of the full text. An `ok: true` result with no `reconciliation_action` (or `"no_match"`: reconcile ran, nothing similar) is already recorded — pass `"learnings": []` in the close payload for it. If any result carries `reconciliation_action: "pending"`, a `contradiction_candidate`, or `require_conflict_resolution: true`, load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 4.5 — Result handling (reconciliation, contradiction, cross-namespace conflict)"` and follow it.
 
 ### Step 4.6 — Intent change reason (P1.2)
 
