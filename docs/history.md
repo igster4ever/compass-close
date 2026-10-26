@@ -22,3 +22,11 @@ default or order change:
 - After the close call: the response fields that need no action (`close_duration_seconds`,
   `close_command_count`, prompt counts, `prompt_count_sources`).
 The full script path is now written once. `--section` load strings keep their tags.
+
+**Correction (same day, after code review):** the strip first replaced the full script path with
+a bare `compass.sh` shorthand, which is not on PATH. Full paths are restored and more text was
+reworded to stay ≤ 20KB. `scripts/tests/test_subskill_protocol.py` in `compass` now guards the
+full path, every `--section` load, the step headings and the size budget.
+The first strip also dropped two instructions, now restored: a prior learning reconfirmed this
+session can add to `pending_boosts`, and the mismatch check fires on any override that
+contradicts the evidence-based default.
