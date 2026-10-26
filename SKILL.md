@@ -383,13 +383,17 @@ includes `close_duration_seconds`/`close_command_count` (`close-prepare` ran at 
 Run, in order, exactly as the parent's sections document them (not duplicated here —
 same files, same triggers):
 
-1. **Skill patch check** — load the section with
+Both read Step 1's `close-prepare` fields. A false or empty field means: skip, load nothing.
+
+1. **Skill patch check** — only if at least one learning was distilled and
+   `skill_patch_matches` is non-empty (installed skills named in the session text, minus
+   skills edited this session). Load the section with
    `~/.claude/skills/compass/scripts/compass.sh prompt router-sections --section "Skill patch check"`
-   and follow it.
-2. **Close-time skill harvesting** (complexity trigger) — if the complexity trigger
-   fires, load the section with
+   and follow it for those skills only.
+2. **Close-time skill harvesting** — only if `harvest_due` is true (`harvest_signals` says
+   which two of the three signals held). Load the section with
    `~/.claude/skills/compass/scripts/compass.sh prompt skill-opportunity-detection --section "Close-time: skill harvesting"`
-   and follow it.
+   and follow it from Step 2 (Step 1's measurement is done).
 
 (Cross-namespace propagation already ran, if eligible, inside Step 5's checklist —
 do not run it again here.)
