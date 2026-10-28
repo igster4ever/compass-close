@@ -291,9 +291,8 @@ back on any failure (`failed_step`) and runs reality compaction last. Shapes: `~
   additions. A `section` must be a leaf from `reality_sections` (a parent with children is
   refused). `close.reality` must then be `""`. `outcomes` apply after `reality_ops`, so they can
   link bullets the same bundle appends.
-- **Verify:** `reality.write_verified` lists bullets already stamped on write. Run `verify-reality
-  <namespace> '<JSON array>'` for the rest of `reality.appended_hashes` that correspond to
-  completed-todo-derived bullets promoted to "What exists and works".
+- **Verify:** run `verify-reality <namespace> '<JSON array>'` on the `unverified_appended` hashes
+  (What exists appends not stamped on write or by an outcome link) that came from completed todos.
 - **Close payload:** keys in `~/.claude/skills/compass/scripts/compass.sh schema close`. Prompt counts come from the tally; pass
   `open_prompt_count`/`close_prompt_count` only for a phase you did not tally.
 - **Tally keys:** pass each screen Steps 2–5 showed as the bundle's `screens` list (`summary`,
