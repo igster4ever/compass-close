@@ -154,8 +154,8 @@ still mark <status>? [Y/n]`.
 - **BOOST** → add each confirmed BOOST to a `pending_boosts` list held for the whole close (the
   DECAY review and a prior learning this session reconfirmed may add more); never call `boost-learning` directly. Use the `learning_id`, not the
   text; a legacy candidate (`learning_id: null`) goes in `texts` as its `full_text`. Flush once as
-  `close-apply`'s `boosts` key (or `boost-learnings-batch <namespace> '{"learning_ids": [...],
-  "texts": [...]}'` right before `close`). Skip it if the list is empty.
+  `close-apply`'s `boosts` key, which also records them as applied (P64). Skip it if the list
+  is empty.
 
 - **GOAL** → build the `goal_statuses` array (e.g. `["completed", "blocked", ...]`). For each goal
   marked **B**/**A**, ask for a reason at Step 4.1a. Omit `goal_types`: close uses the ones `open`
