@@ -251,14 +251,15 @@ item 1 to no; `"5:<text>"` supplies FEEDBACK's text) applies that item and defau
 - **OUTCOME → Y:** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — OUTCOME"` and follow it.
 - **PROPAGATE → Y:** the wording was decided at render time, so accept-all is the only
   confirmation, never a second "use this wording?" turn; `3o` pushes the original, `3n` skips.
-  Load `~/.claude/skills/compass/scripts/compass.sh prompt cross-namespace-propagation --section "From the close checklist"`
-  and `--section "With close-apply"`; the "Deep-close prompt" section is not needed here.
+  Load `~/.claude/skills/compass/scripts/compass.sh prompt cross-namespace-propagation --section "From the close checklist" --section "With close-apply"`
+  in one call; the "Deep-close prompt" section is not needed here.
 - **DECAY → "review":** present the batched decay list as Step 6 describes, Y/N per candidate;
   decline-all skips `approve-learning-decay` entirely.
 - **FEEDBACK → Y (or inline text):** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — FEEDBACK"` and follow it.
 - **BACKLOG MATCH → Y (per candidate):** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — BACKLOG MATCH"` and follow it.
 
-Drill into an item only when the user overrides it or it needs free text.
+Drill into an item only when the user overrides it or it needs free text. Batch Y items'
+sections from one file into one call.
 
 ---
 
