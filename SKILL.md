@@ -3,7 +3,7 @@
 Fast-close sub-skill for `/compass`, invoked from its RALF half when `path=fast`. Deep close and
 multi-namespace close run from the router's `scripts/prompts/router-sections.md`; do not route
 them here. Step 4 is one screen (boosts, goal statuses, per-learning lines). Step 5's checklist is
-a separate screen because its eligibility depends on Step 4's outputs.
+a separate screen because its eligibility depends on Step 4's outputs; it also asks the After-close questions.
 
 **Input:** `namespace`, plus the todo list state (with no TodoWrite-equivalent tool, use
 `state.json`'s `goal_progress`).
@@ -197,7 +197,8 @@ recorded yet, ask and call `set-intent`.
 
 ## Step 5 — Consolidated close checklist
 
-**Compute A–F silently** (each reuses data already in hand; no full `read`):
+**Compute A–H silently** (each reuses data already in hand; no full `read`). If Step 2 changed
+the note, re-run the G/H gates with `after-close-gates <namespace> '{"context": "<final note>"}'`.
 
 - **A — CLAUDE.md reflection:** gate on `repo_path` configured AND `CLAUDE.md` at that root. If
   it passes, scan git commits/completed todos for module-map gaps and this close's learnings for
@@ -217,8 +218,10 @@ recorded yet, ask and call `set-intent`.
 - **F — Backlog match:** Step 1's `backlog_match`, eligible if `candidates` is non-empty (it
   catches items resolved by work that was never a goal). Never offer `excluded_same_session`
   items, and do not copy candidates into the note (`close` records them).
+- **G/H — Skill patch / Harvest:** only if `skill_patch_matches` is non-empty or `harvest_due`:
+  load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 items — SKILL PATCH and HARVEST"` for eligibility and the after-close actions.
 
-**If none of A–F have signal:** skip this whole step — no output — proceed to Step 6.
+**If none of A–H have signal:** skip this whole step — no output — proceed to Step 6.
 
 **Otherwise**, render only the items with actual signal as one screen:
 
@@ -235,12 +238,15 @@ recorded yet, ask and call `set-intent`.
   5. [FEEDBACK]        any protocol friction to log? (default: no)
   6. [BACKLOG MATCH]   "<item text, condensed>" ([tactical|strategic]) looks resolved by
                        this session's work → clear it? (default: yes)
+  7. [SKILL PATCH]     `<skill>`: "<learning>" (<extends|contradicts|edge case>) → patch after close? (default: no)
+  8. [HARVEST]         "<candidate>" → draft a skill after close? (default: no; 8d defer, 8x decline)
 
 Accept all defaults, or override by number (e.g. "1n 5:felt slow at step 3")? [Enter to accept all]
 ```
 
 Number only the items rendered (signal only on C and E → 1 and 2). Render each
-`match-backlog` candidate as its own `[BACKLOG MATCH]` line.
+`match-backlog` candidate as its own `[BACKLOG MATCH]` line, and each G/H candidate as its own line
+(default no: accept-all never starts that work).
 
 **Enter / "y" / "yes"** applies every rendered item's default. A per-item override (`"1n"` flips
 item 1 to no; `"5:<text>"` supplies FEEDBACK's text) applies that item and defaults the rest.
@@ -257,6 +263,7 @@ item 1 to no; `"5:<text>"` supplies FEEDBACK's text) applies that item and defau
   decline-all skips `approve-learning-decay` entirely.
 - **FEEDBACK → Y (or inline text):** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — FEEDBACK"` and follow it.
 - **BACKLOG MATCH → Y (per candidate):** load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 5 item — BACKLOG MATCH"` and follow it.
+- **SKILL PATCH / HARVEST:** hold the answers for After close; never ask again.
 
 Drill into an item only when the user overrides it or it needs free text. Batch Y items'
 sections from one file into one call.
@@ -317,20 +324,7 @@ If `compaction.archived` (close-apply) or `archived` (run-reality-compaction) is
 
 ## After close (still in this sub-skill, before returning)
 
-Run in order. Both read Step 1's `close-prepare` fields; a false or empty field means skip and
-load nothing.
-
-1. **Skill patch check** — only if at least one learning was distilled and
-   `skill_patch_matches` is non-empty (installed skills named in the session text, minus
-   skills edited this session). Load the section with
-   `~/.claude/skills/compass/scripts/compass.sh prompt router-sections --section "Skill patch check"`
-   and follow it for those skills only.
-2. **Close-time skill harvesting** — only if `harvest_due` is true (`harvest_signals` says
-   which two of the three signals held). Load the section with
-   `~/.claude/skills/compass/scripts/compass.sh prompt skill-opportunity-detection --section "Close-time: skill harvesting"`
-   and follow it from Step 2 (Step 1's measurement is done).
-
-Cross-namespace propagation already ran in Step 5; do not run it again here.
+Act on Step 5's G/H answers per their section. Propagation already ran in Step 5.
 
 Confirm to the user:
 ```
