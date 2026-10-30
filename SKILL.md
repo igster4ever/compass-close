@@ -292,7 +292,7 @@ Bundle the pending zone assignments, `pending_boosts`, goal outcome links, accep
 reality ops and the close payload as `{zones, boosts, outcomes, propagate, reality_ops, close}`;
 add `conflicts` and `learnings` if Step 4.5 has not written them yet, and Step 6's `decay` /
 `distil` when they were accepted. It validates first, rolls
-back on any failure (`failed_step`) and runs reality compaction last. Shapes: `~/.claude/skills/compass/scripts/compass.sh help close-apply` and
+back on any failure (`failed_step`). Shapes: `~/.claude/skills/compass/scripts/compass.sh help close-apply` and
 `schema close-apply`.
 
 - **Reality ops:** one op per add or remove, including BACKLOG MATCH removals and reality-rescue
@@ -312,13 +312,7 @@ back on any failure (`failed_step`) and runs reality compaction last. Shapes: `~
 
 Load
 `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Close without close-apply"`
-and follow it: script-only reality writes, the flushes, `reality: ""`, verify, `close`, then
-compaction last.
-
-### After the close call
-
-If `compaction.archived` (close-apply) or `archived` (run-reality-compaction) is above 0, say
-`📦 Archived <N> long-verified bullet(s) to reality_archive.md.`; at 0 say nothing.
+and follow it: script-only reality writes, the flushes, `reality: ""`, verify, `close`.
 
 ---
 
