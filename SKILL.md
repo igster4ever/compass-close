@@ -283,7 +283,8 @@ through), load `~/.claude/skills/compass/scripts/compass.sh prompt close-conditi
 
 Bundle the pending zone assignments, `pending_boosts`, goal outcome links, accepted propagations,
 reality ops and the close payload as `{zones, boosts, outcomes, propagate, reality_ops, close}`;
-add `conflicts` and `learnings` if Step 4.5 has not written them yet. It validates first, rolls
+add `conflicts` and `learnings` if Step 4.5 has not written them yet, and Step 6's `decay` /
+`distil` when they were accepted. It validates first, rolls
 back on any failure (`failed_step`) and runs reality compaction last. Shapes: `~/.claude/skills/compass/scripts/compass.sh help close-apply` and
 `schema close-apply`.
 
@@ -296,7 +297,7 @@ back on any failure (`failed_step`) and runs reality compaction last. Shapes: `~
 - **Close payload:** keys in `~/.claude/skills/compass/scripts/compass.sh schema close`. Prompt counts come from the tally; pass
   `open_prompt_count`/`close_prompt_count` only for a phase you did not tally.
 - **Tally keys:** pass each screen Steps 2–5 showed as the bundle's `screens` list (`summary`,
-  `artefact`, `batch`, `reason`, `contract`, `conflicts`, `intent`, `checklist`; others are
+  `artefact`, `batch`, `reason`, `contract`, `conflicts`, `intent`, `checklist`, `decay`, `corpus`; others are
   refused), or `[]` when none waited for a response. Step 4's batch is **one**. Outside
   `close-apply`, run `~/.claude/skills/compass/scripts/compass.sh tally-prompt <namespace> close <a>,<b>` (or `none`).
 
