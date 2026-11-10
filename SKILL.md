@@ -26,7 +26,7 @@ Compute the defaults silently first:
 - **Goals:** marked done, or shipping evidence in this session's commits → **completed** (cite it).
   Otherwise `(needs input)`, never defaulted.
 - **Boosts:** per `boost_candidates` entry, **boost** if the session relied on it, else **skip**,
-  with a one-clause reason.
+  with a one-clause reason. Keep each entry's `learning_id`: Step 6 boosts by id, not by text.
 - **Learnings:** distil the session's durable learnings (usually one; at most three). Per learning:
   goal-origin, tags and zone from `suggest-tags` (`inferred_zone`; `null` renders as `none`).
 
@@ -122,6 +122,9 @@ One `close-apply` call with `{zones, boosts, propagate, reality_ops, screens, cl
 when accepted). Shapes: `~/.claude/skills/compass/scripts/compass.sh help close-apply`.
 - `reality_ops`: one op per add or remove, including BACKLOG MATCH removals; a `section` must be a
   leaf from `reality_sections`; `close.reality` is then `""`.
+- `boosts`: pass `{"learning_ids": [...]}` using the `learning_id` from `boost_candidates`. Never pass
+  `texts` copied from the screen or from `boost_candidates`: both are cut to ~60-80 characters, a text
+  match needs the full wording, and the call fails with "Learning not found".
 - `close` must carry `completed` and `incomplete` arrays from the todo state (or the goals marked C).
 - `screens`: the screens that waited for a response (`batch`, `reason`, `conflicts`, `intent`,
   `checklist`, `decay`, `artefact`), or `[]`.
