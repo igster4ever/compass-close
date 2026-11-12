@@ -13,8 +13,10 @@ never runs here: it is `/compass maintain`.
 ## Step 1 — Prepare (no pause)
 
 ```bash
-~/.claude/skills/compass/scripts/compass.sh close-prepare <namespace> '{"context": "<note + completed items>"}'
+~/.claude/skills/compass/scripts/compass.sh close-prepare <namespace> '{"context": "<note + completed items>", "compact": true}'
 ```
+`compact: true` drops `gitlog` and `ground` (`brief_markdown` has them) so the reply reads whole.
+Never cut it with `head`: the candidates sit near the end. A repeat call is safe.
 It stamps the close-phase start and returns `close_context`, `gitlog`, `reality_sections`,
 `backlog_match`, `boost_candidates` and `brief_markdown` (keys:
 `~/.claude/skills/compass/scripts/compass.sh schema close-prepare`). A failed part is listed under
@@ -104,6 +106,10 @@ No signal → skip the step. Otherwise one screen, numbered by what renders:
   4. [BACKLOG MATCH] "<item>" looks resolved → clear it? (default: yes)
 Enter accepts all, or override by number.
 ```
+**Never write to `global` unseen.** `propagate` is read by every project. Include it only after the
+user has seen item 2 and accepted it. If they cannot confirm, omit it and add a Tactical backlog bullet
+("Propagate: <learning>").
+
 Accepted items, sections batched into one call per file:
 `close-conditional-flows` → `"Step 5 item — CLAUDE.md"`, `"Step 6 — Learning decay review"`,
 `"Step 5 item — BACKLOG MATCH"`; propagation →
@@ -120,7 +126,7 @@ appeared or changed, and remove the bullets it supersedes. Keep that section und
 
 One `close-apply` call with `{zones, boosts, propagate, reality_ops, screens, close}` (plus `decay`
 when accepted). Shapes: `~/.claude/skills/compass/scripts/compass.sh help close-apply`.
-- `reality_ops`: one op per add or remove, including BACKLOG MATCH removals; a `section` must be a
+- `reality_ops`: one op per add or remove, including BACKLOG MATCH removals (`"position": "first"` on an append op starts the section); a `section` must be a
   leaf from `reality_sections`; `close.reality` is then `""`.
 - `boosts`: pass `{"learning_ids": [...]}` using the `learning_id` from `boost_candidates`. Never pass
   `texts` copied from the screen or from `boost_candidates`: both are cut to ~60-80 characters, a text
@@ -128,7 +134,7 @@ when accepted). Shapes: `~/.claude/skills/compass/scripts/compass.sh help close-
 - `close` must carry `completed` and `incomplete` arrays from the todo state (or the goals marked C).
 - `screens`: the screens that waited for a response (`batch`, `reason`, `conflicts`, `intent`,
   `checklist`, `decay`, `artefact`), or `[]`.
-- Then `verify-reality <namespace> '<JSON array>'` on any `unverified_appended` hashes.
+- Then `verify-reality <namespace> '<JSON array>'` on the response's `unverified_hashes`.
 
 A full-rewrite `update-reality` or a deep close instead loads
 `~/.claude/skills/compass/scripts/compass.sh prompt close-conditional-flows --section "Step 6 — Close without close-apply"`.
