@@ -30,7 +30,8 @@ Compute the defaults silently first:
 - **Boosts:** per `boost_candidates` entry, **boost** if the session relied on it, else **skip**,
   with a one-clause reason. Keep each entry's `learning_id`: Step 6 boosts by id, not by text.
 - **Learnings:** distil the session's durable learnings (usually one; at most three). Per learning:
-  goal-origin, tags and zone from `suggest-tags` (`inferred_zone`; `null` renders as `none`).
+  goal-origin, tags and zone from `suggest-tags` per learning (`inferred_zone`; `null` renders as
+  `none`, never `warning`). Show a hand-set zone as `warning (override)`.
 
 ```
 ## 🔄 Compass — <namespace> · fast close
@@ -76,7 +77,7 @@ For each goal marked **B** or **A**, load
 
 ```bash
 ~/.claude/skills/compass/scripts/compass.sh log-learnings-batch <namespace> - <<'EOF'
-[{"text": "<learning>", "tags": [...], "reconcile": true}]
+[{"text": "<learning>", "tags": [...], "learning_type": "fact", "reconcile": true}]
 EOF
 ```
 Keep each `learning_id` for the zone and boost lists. If a result carries
@@ -126,7 +127,8 @@ appeared or changed, and remove the bullets it supersedes. Keep that section und
 
 One `close-apply` call with `{zones, boosts, propagate, reality_ops, screens, close}` (plus `decay`
 when accepted). Shapes: `~/.claude/skills/compass/scripts/compass.sh help close-apply`.
-- `reality_ops`: one op per add or remove, including BACKLOG MATCH removals (`"position": "first"` on an append op starts the section); a `section` must be a
+- `reality_ops`: one op per add, remove or replace (`replace` edits in place when a
+  capability changed), including BACKLOG MATCH removals (`"position": "first"` on an append op starts the section); a `section` must be a
   leaf from `reality_sections`; `close.reality` is then `""`.
 - `boosts`: pass `{"learning_ids": [...]}` using the `learning_id` from `boost_candidates`. Never pass
   `texts` copied from the screen or from `boost_candidates`: both are cut to ~60-80 characters, a text
